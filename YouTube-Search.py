@@ -74,7 +74,7 @@ def write_db(title, datafile):
 def youtube_search(options):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
     developerKey=DEVELOPER_KEY)
-  datafile = open("./Downloaded_mp3.txt", "r+a")
+ 
 
   # Call the search.list method to retrieve results matching the specified
   # query term.
@@ -94,13 +94,16 @@ def youtube_search(options):
   # Call the check database file
   for title, url in videos.items():
     title = title.encode('ascii', errors='ignore')
+    datafile = open("./Downloaded_mp3.txt", "r+a")
     if check_db(title, datafile):
       print "[!] File found in database."
+      datafile.close()
     else:
       print "[+] Starting Download and Conversion Process"
       download_mp3(title, url)
       print "[+] Writing " + title + " to database"
       write_db(title, datafile)
+      datafile.close()
 
 
 if __name__ == "__main__":
