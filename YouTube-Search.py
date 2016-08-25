@@ -1,0 +1,115 @@
+#!/usr/bin/python
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from oauth2client.tools import argparser
+import youtube_dl
+import sys
+import urlparse
+import json
+import urllib
+import time
+import os
+import glob
+
+DEVELOPER_KEY = "AIzaSyAOeOazXFgWKfMIcSZ2Crhgclr6VIy0MPI"
+YOUTUBE_API_SERVICE_NAME = "youtube"
+YOUTUBE_API_VERSION = "v3"
+
+class MyLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        print(msg)
+
+def my_hook(d):
+    if d['status'] == 'downloading':
+        print('    [+] Download speed: ' + d['_speed_str'] + '\t\t Percent Complete: ' + d['_percent_str'])
+    if d['status'] == 'finished':
+        print('[+] Download Complete. Conversion in progress...')
+
+def download_mp3(title, url):
+  ydl_opts = {
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+    'logger': MyLogger(),
+    'progress_hooks': [my_hook],
+    'outtmpl': '%(title)s.%(ext)s',
+ }
+
+  with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+    info_dict = ydl.extract_info(url, download=False)
+    pre_title = info_dict.get('title', None)
+    print('    [+] Now downloading: ' + title + '.mp3')
+    ydl.download([url])
+
+  print('[+] Conversion complete')
+  print('[+] Renaming file')
+
+  try:
+    newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
+    os.rename(newest, './Music/' + title + '.mp3')
+  except:
+    print('[!] Unable to rename file', sys.exc_info()[0])
+  print('[+] Renaming complete')
+
+def check_db(title, datafile):
+  for line in datafile:
+    if line.strip("\n") == title:
+      return True
+    else:
+      pass
+  return False
+
+def write_db(title, datafile):
+  datafile.write(title + '\n')
+
+def youtube_search(options):
+  youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
+    developerKey=DEVELOPER_KEY)
+  datafile = open("./Downloaded_mp3.txt", "r+a")
+
+  # Call the search.list method to retrieve results matching the specified
+  # query term.
+  search_response = youtube.search().list(
+    q=options.q,
+    part="id,snippet",
+    maxResults=options.max_results
+  ).execute()
+
+  videos = {}
+
+  # Add each result to the appropriate dictionary
+  for search_result in search_response.get("items", []):
+    if search_result["id"]["kind"] == "youtube#video":
+      videos.update({search_result["snippet"]["title"]: "https://youtube.com/watch?v=" + search_result["id"]["videoId"]})
+  
+  # Call the check database file
+  for title, url in videos.items():
+    title = title.encode('ascii', errors='ignore')
+    if check_db(title, datafile):
+      print "[!] File found in database."
+    else:
+      print "[+] Starting Download and Conversion Process"
+      download_mp3(title, url)
+      print "[+] Writing " + title + " to database"
+      write_db(title, datafile)
+
+
+if __name__ == "__main__":
+  search_string = raw_input("Please enter a keywork to search: ")
+  argparser.add_argument("--q", help="Search term", default=search_string)
+  argparser.add_argument("--max-results", help="Max results", default=25)
+  args = argparser.parse_args()
+
+  try:
+    youtube_search(args)
+  except HttpError, e:
+    print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
