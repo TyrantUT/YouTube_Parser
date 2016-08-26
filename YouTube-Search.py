@@ -25,11 +25,18 @@ class MyLogger(object):
     def error(self, msg):
         print(msg)
 
+def restart_line():
+  sys.stdout.write('\r')
+  sys.stdout.flush()
+
 def my_hook(d):
     if d['status'] == 'downloading':
-        print('    [+] Download speed: ' + d['_speed_str'] + '\t\t Percent Complete: ' + d['_percent_str'])
+        print '    [+] Download speed: ' + d['_speed_str'] + '\t\t Percent Complete: ' + d['_percent_str'],
+        sys.stdout.flush()
+        restart_line()
+        
     if d['status'] == 'finished':
-        print('[+] Download Complete. Conversion in progress...')
+        print('\n    [+] Download Complete. Conversion in progress...')
 
 def download_mp3(title, url):
   ydl_opts = {
@@ -53,15 +60,15 @@ def download_mp3(title, url):
     except:
       print('    [+] Failed to download / convert MP3')
 
-  print('[+] Conversion complete')
-  print('[+] Renaming file')
+  print('    [+] Conversion complete')
+  print('    [+] Renaming file')
 
   try:
     newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
     os.rename(newest, './Music/' + title + '.mp3')
   except:
     print('[!] Unable to rename file', sys.exc_info()[0])
-  print('[+] Renaming complete')
+  print('    [+] Renaming complete')
 
 def check_db(title, datafile):
   for line in datafile:
@@ -95,16 +102,16 @@ def youtube_search(options):
       videos.update({search_result["snippet"]["title"]: "https://youtube.com/watch?v=" + search_result["id"]["videoId"]})
   
   # Print titles found and prompt to continue
-  print "This is what I found"
+  print "\nThis is what I found\n"
   for title, url in videos.items():
     print title
-
+  print '\n'
   yes_no = raw_input("[?] Do you want to continue? (Anything but 'yes' will exit) ")
 
   if yes_no != 'yes':
     print "[!] Exiting..."
     exit()
-
+  print '\n'
   # Call the check database file
   for title, url in videos.items():
    
@@ -122,7 +129,7 @@ def youtube_search(options):
 
 
 if __name__ == "__main__":
-  search_string = raw_input("Please enter a keywork to search: ")
+  search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
   argparser.add_argument("--max-results", help="Max results", default=25)
   args = argparser.parse_args()
