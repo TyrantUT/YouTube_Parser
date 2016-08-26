@@ -94,8 +94,20 @@ def youtube_search(options):
     if search_result["id"]["kind"] == "youtube#video":
       videos.update({search_result["snippet"]["title"]: "https://youtube.com/watch?v=" + search_result["id"]["videoId"]})
   
+  # Print titles found and prompt to continue
+  print "This is what I found"
+  for title, url in videos.items():
+    print title
+
+  yes_no = raw_input("[?] Do you want to continue? (Anything but 'yes' will exit) ")
+
+  if yes_no != 'yes':
+    print "[!] Exiting..."
+    exit()
+
   # Call the check database file
   for title, url in videos.items():
+   
     title = title.encode('ascii', errors='ignore')
     datafile = open("./Downloaded_mp3.txt", "r+a")
     if check_db(title, datafile):
