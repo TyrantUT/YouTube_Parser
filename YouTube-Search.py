@@ -106,29 +106,40 @@ def youtube_search(options):
   for title, url in videos.items():
     print title
   print '\n'
-  yes_no = raw_input("[?] Do you want to continue? (Anything but 'yes' will exit) ")
+  print '[1] Enter 1 to download the first hit item'
+  print '[2] Enter 2 to to continue with the full list'
+  print '[3] Enter 3 to exit'
+  yes_no = raw_input("[?] How do you want to continue? ")
 
-  if yes_no != 'yes':
-    print "[!] Exiting..."
+  if yes_no == '1':
+    print "[!] Function not implemented yet."
     exit()
+  elif yes_no = '3':
+    print "[!] Exiting"
+    exit()
+  else:
+
   print '\n'
   # Call the check database file
   for title, url in videos.items():
    
     title = title.encode('ascii', errors='ignore')
     datafile = open("./Downloaded_mp3.txt", "r+a")
+
     if check_db(title, datafile):
       print "[!] File found in database."
       datafile.close()
     else:
       print "[+] Starting Download and Conversion Process"
       download_mp3(title, url)
+
       print "[+] Writing " + title + " to database"
       write_db(title, datafile)
       datafile.close()
 
 
 if __name__ == "__main__":
+  
   search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
   argparser.add_argument("--max-results", help="Max results", default=25)
