@@ -48,7 +48,10 @@ def download_mp3(title, url):
     info_dict = ydl.extract_info(url, download=False)
     pre_title = info_dict.get('title', None)
     print('    [+] Now downloading: ' + title + '.mp3')
-    ydl.download([url])
+    try:
+      ydl.download([url])
+    except:
+      print('    [+] Failed to download / convert MP3')
 
   print('[+] Conversion complete')
   print('[+] Renaming file')
