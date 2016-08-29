@@ -84,7 +84,6 @@ def write_db(title, datafile):
 def youtube_search(options):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
     developerKey=DEVELOPER_KEY)
- 
 
   # Call the search.list method to retrieve results matching the specified
   # query term.
@@ -102,40 +101,79 @@ def youtube_search(options):
       videos.update({search_result["snippet"]["title"]: "https://youtube.com/watch?v=" + search_result["id"]["videoId"]})
   
   # Print titles found and prompt to continue
+  os.system('clear')
   print "\nThis is what I found\n"
+  counter = 1
   for title, url in videos.items():
-    print title
+    print '[+] ' + str(counter) + ' ' +  title
+    counter += 1
   print '\n'
-  print '[1] Enter 1 to download the first hit item'
+  print '[1] Enter 1 to download a specific item'
   print '[2] Enter 2 to to continue with the full list'
   print '[3] Enter 3 to exit'
   yes_no = raw_input("[?] How do you want to continue? ")
 
   if yes_no == '1':
-    print "[!] Function not implemented yet."
-    exit()
-  elif yes_no = '3':
+
+    print '\n'
+    download_number = raw_input("Please enter the number of the video you want to download: ")
+    print '\n'
+    download_number =- 1
+    print 'You selected: ' + videos.keys()[download_number]
+    new_yes = raw_input("Do you want to continue or select a new song? (yes to continue) ")
+   
+    if new_yes == 'yes':
+
+      title = videos.keys()[download_number]
+      title = title.encode('ascii', errors='ignore')
+      urls = videos.values()[download_number]
+      datafile = open("./Downloaded_mp3.txt", "r+a")
+
+      if check_db(title, datafile):
+        print "[!] File found in database."
+        datafile.close()
+        time.sleep(1)
+        youtube_search(options)
+
+      else:
+        print "[+] Starting Download and Conversion Process"
+        download_mp3(title, url)
+        print "[+] Writing " + title + " to database"
+        write_db(title, datafile)
+        datafile.close()
+        exit()
+
+    else:
+      youtube_search(options)
+
+  elif yes_no == '3':
     print "[!] Exiting"
     exit()
+    
+  elif yes_no == '2':
+
+    print '\n'
+    # Call the check database file
+    for title, url in videos.items():
+      
+      title = title.encode('ascii', errors='ignore')
+      datafile = open("./Downloaded_mp3.txt", "r+a")
+
+      if check_db(title, datafile):
+        print "[!] File found in database."
+        datafile.close()
+      else:
+        print "[+] Starting Download and Conversion Process"
+        download_mp3(title, url)
+
+        print "[+] Writing " + title + " to database"
+        write_db(title, datafile)
+        datafile.close()
   else:
-
-  print '\n'
-  # Call the check database file
-  for title, url in videos.items():
-   
-    title = title.encode('ascii', errors='ignore')
-    datafile = open("./Downloaded_mp3.txt", "r+a")
-
-    if check_db(title, datafile):
-      print "[!] File found in database."
-      datafile.close()
-    else:
-      print "[+] Starting Download and Conversion Process"
-      download_mp3(title, url)
-
-      print "[+] Writing " + title + " to database"
-      write_db(title, datafile)
-      datafile.close()
+    os.system('clear')
+    print "[!] Please select 1, 2, or 3."
+    youtube_search(options)
+      
 
 
 if __name__ == "__main__":
