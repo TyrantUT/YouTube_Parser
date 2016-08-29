@@ -11,7 +11,6 @@ import time
 import os
 import glob
 
-
 DEVELOPER_KEY = "AIzaSyAOeOazXFgWKfMIcSZ2Crhgclr6VIy0MPI"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
