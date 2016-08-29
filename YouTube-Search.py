@@ -128,7 +128,8 @@ def youtube_search(options):
       title = title.encode('ascii', errors='ignore')
       urls = videos.values()[download_number]
       datafile = open("./Downloaded_mp3.txt", "r+a")
-
+      print '[!] Checking database for duplicates'
+      
       if check_db(title, datafile):
         print "[!] File found in database."
         datafile.close()
@@ -149,7 +150,7 @@ def youtube_search(options):
   elif yes_no == '3':
     print "[!] Exiting"
     exit()
-    
+
   elif yes_no == '2':
 
     print '\n'
