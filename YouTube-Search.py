@@ -57,11 +57,12 @@ def download_mp3(title, url):
     print('    [+] Now downloading: ' + title + '.mp3')
     try:
       ydl.download([url])
+      print('    [+] Conversion complete')
+      print('    [+] Renaming file')
     except:
       print('    [+] Failed to download / convert MP3')
 
-  print('    [+] Conversion complete')
-  print('    [+] Renaming file')
+  
 
   try:
     newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
