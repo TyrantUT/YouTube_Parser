@@ -106,7 +106,7 @@ def youtube_search(options):
   print "\nThis is what I found\n"
   counter = 1
   for title, url in videos.items():
-    print '[+] ' + str(counter) + ' ' +  title
+    print '[' + str(counter) + '] ' +  title
     counter += 1
   print '\n'
   print '[1] Enter 1 to download a specific item'
@@ -130,7 +130,7 @@ def youtube_search(options):
       urls = videos.values()[download_number]
       datafile = open("./Downloaded_mp3.txt", "r+a")
       print '[!] Checking database for duplicates'
-      
+
       if check_db(title, datafile):
         print "[!] File found in database."
         datafile.close()
@@ -151,7 +151,7 @@ def youtube_search(options):
   elif yes_no == '3':
     print "[!] Exiting"
     exit()
-
+    
   elif yes_no == '2':
 
     print '\n'
