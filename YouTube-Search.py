@@ -140,7 +140,7 @@ def youtube_search(options):
       else:
         print "[+] Starting Download and Conversion Process"
         download_mp3(title, url)
-        print "[+] Writing " + title + " to database"
+        print "    [+] Writing " + title + " to database"
         write_db(title, datafile)
         datafile.close()
         exit()
@@ -151,7 +151,7 @@ def youtube_search(options):
   elif yes_no == '3':
     print "[!] Exiting"
     exit()
-    
+     
   elif yes_no == '2':
 
     print '\n'
@@ -168,7 +168,7 @@ def youtube_search(options):
         print "[+] Starting Download and Conversion Process"
         download_mp3(title, url)
 
-        print "[+] Writing " + title + " to database"
+        print "    [+] Writing " + title + " to database"
         write_db(title, datafile)
         datafile.close()
   else:
