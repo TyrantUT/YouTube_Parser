@@ -6,12 +6,18 @@ import youtube_dl
 import sys
 import urlparse
 import json
+import re
 import urllib
+import urllib2
 import time
 import os
 import glob
 
-DEVELOPER_KEY = "AIzaSyAOeOazXFgWKfMIcSZ2Crhgclr6VIy0MPI"
+track_time_name = []
+
+with open('./youtube.key', 'r') as k:
+  DEVELOPER_KEY = k.readline()
+
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
@@ -38,7 +44,48 @@ def my_hook(d):
     if d['status'] == 'finished':
         print('\n    [+] Download Complete. Conversion in progress...')
 
-def download_mp3(title, url):
+def parse_tracklist(meta):
+  found = False
+  global track_time_name
+  for line in meta.splitlines():
+    if re.match('.*?\d{1,2}:\d{2}', line):
+      found = True
+      track_time_name.append(line)
+      #print line
+  if found == False:
+    return False
+  else:
+    return True
+
+def get_time_track(ln):
+
+
+  track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
+  track_name = re.search('[a-zA-Z]+.*', ln).group(0)
+
+  print track_time
+  print track_name
+
+
+
+def get_tracklist(video_id):
+
+  video_url = 'https://www.googleapis.com/youtube/v3/videos?id=' + video_id + '&key=' + DEVELOPER_KEY.strip('\n') + '&part=snippet'
+
+  response = urllib2.urlopen(video_url)
+  video_response = json.load(response)
+  videoMetadata = []
+
+  for v in video_response['items']:
+    videoMetadata.append(v['snippet']['description'])
+  for meta in videoMetadata:
+    if parse_tracklist(meta):
+      return True
+
+  #exit()
+
+def download_mp3(title, video_id):
+  url = 'https://youtube.com/watch?v=' + video_id
   ydl_opts = {
     'format': 'bestaudio/best',
     'postprocessors': [{
@@ -52,24 +99,27 @@ def download_mp3(title, url):
  }
 
   with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-    info_dict = ydl.extract_info(url, download=False)
-    pre_title = info_dict.get('title', None)
+    #info_dict = ydl.extract_info(url, download=False)
+    #pre_title = info_dict.get('title', None)
     print('    [+] Now downloading: ' + title + '.mp3')
     try:
-      ydl.download([url])
+      #ydl.download([url])
       print('    [+] Conversion complete')
       print('    [+] Renaming file')
     except:
       print('    [+] Failed to download / convert MP3')
 
-  
-
   try:
     newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
     os.rename(newest, './Music/' + title + '.mp3')
+    print '    [+] Renaming complete'
   except:
     print('[!] Unable to rename file', sys.exc_info()[0])
-  print('    [+] Renaming complete')
+  if get_tracklist(video_id):
+    print '    [+] Detected track list in video Description.'
+    print '    [+] Splitting song into separate tracks'
+    for ln in track_time_name:
+      get_time_track(ln)
 
 def check_db(title, datafile):
   for line in datafile:
@@ -81,6 +131,7 @@ def check_db(title, datafile):
 
 def write_db(title, datafile):
   datafile.write(title + '\n')
+
 
 def youtube_search(options):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
@@ -94,24 +145,28 @@ def youtube_search(options):
     maxResults=options.max_results
   ).execute()
 
+# TODO: Modify the dictionary to a list for proper individual file download handling
   videos = {}
-
   # Add each result to the appropriate dictionary
   for search_result in search_response.get("items", []):
     if search_result["id"]["kind"] == "youtube#video":
-      videos.update({search_result["snippet"]["title"]: "https://youtube.com/watch?v=" + search_result["id"]["videoId"]})
-  
+      video_id = search_result["id"]["videoId"]
+      videos.update({search_result["snippet"]["title"]: video_id})
+ 
   # Print titles found and prompt to continue
   os.system('clear')
+
   print "\nThis is what I found\n"
   counter = 1
-  for title, url in videos.items():
+  for title, video_id in videos.items():
     print '[' + str(counter) + '] ' +  title
     counter += 1
+
   print '\n'
   print '[1] Enter 1 to download a specific item'
   print '[2] Enter 2 to to continue with the full list'
   print '[3] Enter 3 to exit'
+
   yes_no = raw_input("[?] How do you want to continue? ")
 
   if yes_no == '1':
@@ -139,7 +194,7 @@ def youtube_search(options):
 
       else:
         print "[+] Starting Download and Conversion Process"
-        download_mp3(title, url)
+        download_mp3(title, urls)
         print "    [+] Writing " + title + " to database"
         write_db(title, datafile)
         datafile.close()
@@ -156,7 +211,7 @@ def youtube_search(options):
 
     print '\n'
     # Call the check database file
-    for title, url in videos.items():
+    for title, video_id in videos.items():
       
       title = title.encode('ascii', errors='ignore')
       datafile = open("./Downloaded_mp3.txt", "r+a")
@@ -166,7 +221,7 @@ def youtube_search(options):
         datafile.close()
       else:
         print "[+] Starting Download and Conversion Process"
-        download_mp3(title, url)
+        download_mp3(title, video_id)
 
         print "    [+] Writing " + title + " to database"
         write_db(title, datafile)
@@ -182,7 +237,7 @@ if __name__ == "__main__":
   
   search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
-  argparser.add_argument("--max-results", help="Max results", default=25)
+  argparser.add_argument("--max-results", help="Max results", default=1)
   args = argparser.parse_args()
 
   try:
