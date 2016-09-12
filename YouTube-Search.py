@@ -2,6 +2,7 @@
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
+from pydub import AudioSegment
 import youtube_dl
 import sys
 import urlparse
@@ -57,17 +58,6 @@ def parse_tracklist(meta):
   else:
     return True
 
-def get_time_track(ln):
-
-
-  track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
-  track_name = re.search('[a-zA-Z]+.*', ln).group(0)
-
-  print track_time
-  print track_name
-
-
-
 def get_tracklist(video_id):
 
   video_url = 'https://www.googleapis.com/youtube/v3/videos?id=' + video_id + '&key=' + DEVELOPER_KEY.strip('\n') + '&part=snippet'
@@ -82,9 +72,27 @@ def get_tracklist(video_id):
     if parse_tracklist(meta):
       return True
 
-  #exit()
+def split_tracks(track_time_name, new_filename):
+
+  original_file = AudioSegment.from_file(new_filename, 'mp3')
+  for ln in track_time_name:
+    track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
+    track_name = re.search('[a-zA-Z]+.*', ln).group(0)
+
+    print track_time
+    print track_name
+
+    parts = ln.split(':')
+    seconds = None
+    if len(parts) == 3: # h:m:s
+      seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+    elif len(parts) == 2: # m:s
+      seconds = int(parts[0]) * 60 + int(parts[1])
+    print seconds
+
 
 def download_mp3(title, video_id):
+  global track_time_name
   url = 'https://youtube.com/watch?v=' + video_id
   ydl_opts = {
     'format': 'bestaudio/best',
@@ -103,7 +111,7 @@ def download_mp3(title, video_id):
     #pre_title = info_dict.get('title', None)
     print('    [+] Now downloading: ' + title + '.mp3')
     try:
-      #ydl.download([url])
+      ydl.download([url])
       print('    [+] Conversion complete')
       print('    [+] Renaming file')
     except:
@@ -113,13 +121,17 @@ def download_mp3(title, video_id):
     newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
     os.rename(newest, './Music/' + title + '.mp3')
     print '    [+] Renaming complete'
+    if get_tracklist(video_id):
+      print '    [+] Detected track list in video Description.'
+      print '    [+] Splitting song into separate tracks'
+      try:
+        new_filename = './Music/' + title + '.mp3'
+        split_tracks(track_time_name, new_filename)
+      except:
+        print '    [!] Unable to split file.'
   except:
     print('[!] Unable to rename file', sys.exc_info()[0])
-  if get_tracklist(video_id):
-    print '    [+] Detected track list in video Description.'
-    print '    [+] Splitting song into separate tracks'
-    for ln in track_time_name:
-      get_time_track(ln)
+  track_time_name = [] # Reset global variable for next song
 
 def check_db(title, datafile):
   for line in datafile:
@@ -128,10 +140,6 @@ def check_db(title, datafile):
     else:
       pass
   return False
-
-def write_db(title, datafile):
-  datafile.write(title + '\n')
-
 
 def youtube_search(options):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
@@ -150,8 +158,8 @@ def youtube_search(options):
   # Add each result to the appropriate dictionary
   for search_result in search_response.get("items", []):
     if search_result["id"]["kind"] == "youtube#video":
-      video_id = search_result["id"]["videoId"]
-      videos.update({search_result["snippet"]["title"]: video_id})
+      video_id_dict = search_result["id"]["videoId"]
+      videos.update({search_result["snippet"]["title"]: video_id_dict})
  
   # Print titles found and prompt to continue
   os.system('clear')
@@ -182,9 +190,10 @@ def youtube_search(options):
 
       title = videos.keys()[download_number]
       title = title.encode('ascii', errors='ignore')
-      urls = videos.values()[download_number]
-      datafile = open("./Downloaded_mp3.txt", "r+a")
+      single_video_id = videos.values()[download_number]
+      
       print '[!] Checking database for duplicates'
+      datafile = open("./Downloaded_mp3.txt", "r+a")
 
       if check_db(title, datafile):
         print "[!] File found in database."
@@ -194,9 +203,9 @@ def youtube_search(options):
 
       else:
         print "[+] Starting Download and Conversion Process"
-        download_mp3(title, urls)
+        download_mp3(title, single_video_id)
         print "    [+] Writing " + title + " to database"
-        write_db(title, datafile)
+        datafile.write(title + '\n')
         datafile.close()
         exit()
 
@@ -224,7 +233,7 @@ def youtube_search(options):
         download_mp3(title, video_id)
 
         print "    [+] Writing " + title + " to database"
-        write_db(title, datafile)
+        datafile.write(title + '\n')
         datafile.close()
   else:
     os.system('clear')
@@ -237,7 +246,7 @@ if __name__ == "__main__":
   
   search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
-  argparser.add_argument("--max-results", help="Max results", default=1)
+  argparser.add_argument("--max-results", help="Max results", default=25)
   args = argparser.parse_args()
 
   try:
