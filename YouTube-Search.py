@@ -2,7 +2,6 @@
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
-from pydub import AudioSegment
 import youtube_dl
 import sys
 import urlparse
@@ -38,7 +37,7 @@ def restart_line():
 
 def my_hook(d):
     if d['status'] == 'downloading':
-        print '    [+] Download speed: ' + d['_speed_str'] + '\t\t Percent Complete: ' + d['_percent_str'],
+        print '    [+] Download speed: ' + d['_speed_str'] + ' \t\t Percent Complete: ' + d['_percent_str'],
         sys.stdout.flush()
         restart_line()
         
@@ -73,9 +72,13 @@ def get_tracklist(video_id):
       return True
 
 def split_tracks(track_time_name, new_filename):
+  audio_converter = 'ffmpeg'
+  command_start = '-ss'
+  command_end = '-t'
+  command_input = '-i'
 
-  original_file = AudioSegment.from_file(new_filename, 'mp3')
   for ln in track_time_name:
+
     track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
     track_name = re.search('[a-zA-Z]+.*', ln).group(0)
 
@@ -111,26 +114,33 @@ def download_mp3(title, video_id):
     #pre_title = info_dict.get('title', None)
     print('    [+] Now downloading: ' + title + '.mp3')
     try:
-      ydl.download([url])
+      #ydl.download([url])
       print('    [+] Conversion complete')
       print('    [+] Renaming file')
     except:
-      print('    [+] Failed to download / convert MP3')
+      webm = max(glob.iglob('./*.[Ww][Ee][Bb][Mm]'), key=os.path.getctime)
+      if os.path.isfile(webm):
+        try:
+          print '    [+] Attempting to convert directly.'
+          #os.system('ffmpeg -i ' + '"' + webm + '"' + ' -vn -c:a libmp3lame -b:a 128k ' + '"' + title + '"' + '.mp3')
+        except:
+          print('    [+] Failed to download / convert MP3')
+        print('    [+] Failed to download / convert MP3')
 
   try:
     newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
     os.rename(newest, './Music/' + title + '.mp3')
     print '    [+] Renaming complete'
-    if get_tracklist(video_id):
-      print '    [+] Detected track list in video Description.'
-      print '    [+] Splitting song into separate tracks'
-      try:
-        new_filename = './Music/' + title + '.mp3'
-        split_tracks(track_time_name, new_filename)
-      except:
-        print '    [!] Unable to split file.'
   except:
     print('[!] Unable to rename file', sys.exc_info()[0])
+  if get_tracklist(video_id):
+    print '    [+] Detected track list in video Description.'
+    print '    [+] Splitting song into separate tracks'
+    try:
+      new_filename = './Music/' + title + '.mp3'
+      split_tracks(track_time_name, new_filename)
+    except:
+      print '    [!] Unable to split file.'
   track_time_name = [] # Reset global variable for next song
 
 def check_db(title, datafile):
