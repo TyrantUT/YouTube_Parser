@@ -71,27 +71,50 @@ def get_tracklist(video_id):
     if parse_tracklist(meta):
       return True
 
-def split_tracks(track_time_name, new_filename):
+def split_song_to_tracks(val, track_start, track_stop, new_filename):
+
   audio_converter = 'ffmpeg'
-  command_start = '-ss'
-  command_end = '-t'
-  command_input = '-i'
+  command_start = ' -ss '
+  command_end = ' -t '
+  command_input = ' -i '
+  running_command = audio_converter + command_start + track_start + command_end + track_stop + command_input + new_filename + " " + val
+  
+  print '    [+] Attempting to split track ' + val
+  try:
+    os.system(running_command)
+  except:
+    print '    [!] Unable to split track ' + val
+
+def split_tracks(track_time_name, new_filename):
+  
+  track_title = []
+  track_seconds = []
+  track_num = len(track_title)
 
   for ln in track_time_name:
-
+    
     track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
-    track_name = re.search('[a-zA-Z]+.*', ln).group(0)
+    track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0)
 
-    print track_time
-    print track_name
+    track_title.append(track_name)
 
-    parts = ln.split(':')
+    parts = track_time.split(':')
     seconds = None
     if len(parts) == 3: # h:m:s
       seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
     elif len(parts) == 2: # m:s
       seconds = int(parts[0]) * 60 + int(parts[1])
-    print seconds
+    track_seconds.append(seconds)
+    
+    # TODO: Get track duration and send instead of last i + 1. This will account for the last track
+    # so it will split to the end of track instead of reading from a NULL value outside the list
+    for i, val in enumerate(track_title):
+      split_song_to_tracks(val, track_seconds[i], track_seconds[i + 1], new_filename)
+      print i, val
+      print track_seconds[i]
+
+    track_title = []
+    track_seconds = []
 
 
 def download_mp3(title, video_id):
