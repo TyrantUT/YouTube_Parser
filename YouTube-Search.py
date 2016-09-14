@@ -90,7 +90,7 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   command_start = ' -ss '
   command_end = ' -t '
   command_input = ' -i '
-  input_file = '"' + new_filename + '.mp3"'
+  input_file = '"' + new_filename + '"'
   output_file = '"' + val + '.mp3"'
   running_command = audio_converter + command_start + str(track_start) + command_end + str(track_stop) + command_input + input_file + " " + output_file
   
