@@ -18,6 +18,7 @@ import urllib2
 import time
 import os
 import glob
+import shutil
 
 
 _youtube_key_ = './youtube.key'
@@ -90,17 +91,27 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   command_start = ' -ss '
   command_end = ' -t '
   command_input = ' -i '
+  command_codec = ' -acodec copy '
   input_file = '"' + new_filename + '"'
   output_file = '"' + val + '.mp3"'
-  running_command = audio_converter + command_start + str(track_start) + command_end + str(track_stop) + command_input + input_file + " " + output_file
+
+  track_end = track_stop - track_start
+  running_command = audio_converter + command_input + input_file + command_start + str(track_start) + command_end + str(track_end) + command_codec + " " + output_file
+  
   
   print '    [+] Attempting to split track ' + val
   print '    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop)
   try:
     os.system(running_command)
-    os.rename(output_file, './Converted/' + output_file)
   except:
     print '    [!] Unable to split track ' + val
+  print '    [+] Track split'
+  print '    [+] Attempting to move to ./Converted folder'
+
+  try:
+    shutil.move('./' + val + '.mp3', './Converted/' + val + '.mp3')
+  except Exception, e:
+    print '    [!] Unable to move file. ' + str(e)
 
 def get_file_duration(new_filename):
   cmd1 = "ffprobe -i "
@@ -108,7 +119,7 @@ def get_file_duration(new_filename):
   full_command = cmd1 + '"' + new_filename + '"' + cmd2
   output = os.popen(full_command).read().strip("\n")
   if output:
-    return output
+    return int(output)
   else:
     print '    [!] Could not extract duration of song'
 
@@ -146,8 +157,6 @@ def split_tracks(track_time_name, new_filename):
     else:
       split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1], new_filename)
       index += 1
-    print str(i) + " " + val
-    print track_seconds[i]
 
   track_title = []
   track_seconds = []
