@@ -135,10 +135,14 @@ def split_tracks(track_time_name, new_filename):
 
   total_duration = get_file_duration(new_filename)
 
+  # TODO:::
   for ln in track_time_name:
     
-    track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
-    track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0)
+    try:
+      track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
+      track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0)
+    except Exception, e:
+      print '    [!] Unable to parse strings. ' + str(e)
 
     track_title.append(track_name)
 
