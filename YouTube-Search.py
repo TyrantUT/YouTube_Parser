@@ -19,6 +19,7 @@ import time
 import os
 import glob
 import shutil
+import collections
 
 
 _youtube_key_ = './youtube.key'
@@ -95,7 +96,9 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   input_file = '"' + new_filename + '"'
   output_file = '"' + val + '.mp3"'
 
-  track_end = track_stop - track_start
+  # Handle final track float for track duration float
+  track_end = float(track_stop) - track_start
+
   running_command = audio_converter + command_input + input_file + command_start + str(track_start) + command_end + str(track_end) + command_codec + " " + output_file
   
   
@@ -119,7 +122,7 @@ def get_file_duration(new_filename):
   full_command = cmd1 + '"' + new_filename + '"' + cmd2
   output = os.popen(full_command).read().strip("\n")
   if output:
-    return int(output)
+    return output
   else:
     print '    [!] Could not extract duration of song'
 
@@ -236,6 +239,9 @@ def youtube_search(options):
     if search_result["id"]["kind"] == "youtube#video":
       video_id_dict = search_result["id"]["videoId"]
       videos.update({search_result["snippet"]["title"]: video_id_dict})
+
+  # Create ordred dictionary for videos
+  videos = collections.OrderedDict(videos)
  
   # Print titles found and prompt to continue
   os.system('clear')
@@ -264,9 +270,9 @@ def youtube_search(options):
    
     if new_yes == 'yes':
 
-      title = videos.keys()[download_number]
+      title = videos.keys()[int(download_number)]
       title = title.encode('ascii', errors='ignore')
-      single_video_id = videos.values()[download_number]
+      single_video_id = videos.values()[int(download_number)]
       
       print '[!] Checking database for duplicates'
       datafile = open("./Downloaded_mp3.txt", "r+a")
