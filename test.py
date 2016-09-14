@@ -1,6 +1,15 @@
 #!/usr/bin/python
-from pydub import AudioSegment
 import os
+import io
 
-new_files = AudioSegment.from_mp3("./new.mp3")
-new_files.export("./Sup.mp3", format="mp3")
+
+file = '"3 HOURS Best Female Vocal Dubstep Mix 2015 (by DYJ) - Dubstep Remix 2015.mp3"'
+
+cmd1 = "ffprobe -i "
+cmd2 = file
+cmd3 = " -show_entries format=duration -v quiet -of csv='p=0'"
+
+full_command = cmd1 + cmd2 + cmd3
+output = os.popen(full_command).read().strip("\n")
+
+print output

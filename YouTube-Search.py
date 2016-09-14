@@ -1,4 +1,10 @@
 #!/usr/bin/python
+"""
+Python script to search through YouTube videos based on search criteria, download each given video
+and convert to MP3, search through the video Description for a tracklist and split the initial 
+download into the proper track lists.
+"""
+
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
@@ -12,6 +18,13 @@ import urllib2
 import time
 import os
 import glob
+
+
+_youtube_key_ = './youtube.key'
+
+if not os.path.exists(_youtube_key_):
+  print '[!] Unable to find YouTube API Key File. Please re-create and try again.'
+  quit()
 
 track_time_name = []
 
@@ -77,19 +90,36 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   command_start = ' -ss '
   command_end = ' -t '
   command_input = ' -i '
-  running_command = audio_converter + command_start + track_start + command_end + track_stop + command_input + new_filename + " " + val
+  input_file = '"' + new_filename + '.mp3"'
+  output_file = '"' + val + '.mp3"'
+  running_command = audio_converter + command_start + str(track_start) + command_end + str(track_stop) + command_input + input_file + " " + output_file
   
   print '    [+] Attempting to split track ' + val
+  print '    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop)
   try:
     os.system(running_command)
+    os.rename(output_file, '/Converted/' + output_file)
   except:
     print '    [!] Unable to split track ' + val
+
+def get_file_duration(new_filename):
+  cmd1 = "ffprobe -i "
+  cmd2 = " -show_entries format=duration -v quiet -of csv='p=0'"
+  full_command = cmd1 + '"' + new_filename + '"' + cmd2
+  output = os.popen(full_command).read().strip("\n")
+  if output:
+    return output
+  else:
+    print '    [!] Could not extract duration of song'
+
 
 def split_tracks(track_time_name, new_filename):
   
   track_title = []
   track_seconds = []
   track_num = len(track_title)
+
+  total_duration = get_file_duration(new_filename)
 
   for ln in track_time_name:
     
@@ -105,16 +135,22 @@ def split_tracks(track_time_name, new_filename):
     elif len(parts) == 2: # m:s
       seconds = int(parts[0]) * 60 + int(parts[1])
     track_seconds.append(seconds)
-    
-    # TODO: Get track duration and send instead of last i + 1. This will account for the last track
-    # so it will split to the end of track instead of reading from a NULL value outside the list
-    for i, val in enumerate(track_title):
-      split_song_to_tracks(val, track_seconds[i], track_seconds[i + 1], new_filename)
-      print i, val
-      print track_seconds[i]
 
-    track_title = []
-    track_seconds = []
+    # TODO: Fix track_seconds for different description formats
+  index = 0
+  for i, val in enumerate(track_title):
+
+    if index == len(track_title) - 1:
+      split_song_to_tracks(val, track_seconds[index], total_duration, new_filename)
+
+    else:
+      split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1], new_filename)
+      index += 1
+    print str(i) + " " + val
+    print track_seconds[i]
+
+  track_title = []
+  track_seconds = []
 
 
 def download_mp3(title, video_id):
@@ -137,7 +173,7 @@ def download_mp3(title, video_id):
     #pre_title = info_dict.get('title', None)
     print('    [+] Now downloading: ' + title + '.mp3')
     try:
-      #ydl.download([url])
+      ydl.download([url])
       print('    [+] Conversion complete')
       print('    [+] Renaming file')
     except:
@@ -145,7 +181,7 @@ def download_mp3(title, video_id):
       if os.path.isfile(webm):
         try:
           print '    [+] Attempting to convert directly.'
-          #os.system('ffmpeg -i ' + '"' + webm + '"' + ' -vn -c:a libmp3lame -b:a 128k ' + '"' + title + '"' + '.mp3')
+          os.system('ffmpeg -i ' + '"' + webm + '"' + ' -vn -c:a libmp3lame -b:a 128k ' + '"' + title + '"' + '.mp3')
         except:
           print('    [+] Failed to download / convert MP3')
         print('    [+] Failed to download / convert MP3')
@@ -159,11 +195,9 @@ def download_mp3(title, video_id):
   if get_tracklist(video_id):
     print '    [+] Detected track list in video Description.'
     print '    [+] Splitting song into separate tracks'
-    try:
-      new_filename = './Music/' + title + '.mp3'
-      split_tracks(track_time_name, new_filename)
-    except:
-      print '    [!] Unable to split file.'
+    new_filename = './Music/' + title + '.mp3'
+    split_tracks(track_time_name, new_filename)
+
   track_time_name = [] # Reset global variable for next song
 
 def check_db(title, datafile):
@@ -276,7 +310,22 @@ def youtube_search(options):
 
 
 if __name__ == "__main__":
+
+  # Check for directories and files prior to moving on
+  _music_ = './Music'
+  _converted_ = './Converted'
+  _downloaded_db_ = './Downloaded_mp3.txt'
+
+  if not os.path.isdir(_music_):
+    os.makedirs(_music_)
+  if not os.path.isdir(_converted_):
+    os.makedirs(_converted_)
+  if not os.path.exists(_downloaded_db_):
+    open(_downloaded_db_, 'a').close()
+
   
+
+
   search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
   argparser.add_argument("--max-results", help="Max results", default=25)
