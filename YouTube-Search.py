@@ -98,7 +98,7 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   print '    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop)
   try:
     os.system(running_command)
-    os.rename(output_file, '/Converted/' + output_file)
+    os.rename(output_file, './Converted/' + output_file)
   except:
     print '    [!] Unable to split track ' + val
 
