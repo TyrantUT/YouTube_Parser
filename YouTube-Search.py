@@ -3,6 +3,24 @@
 Python script to search through YouTube videos based on search criteria, download each given video
 and convert to MP3, search through the video Description for a tracklist and split the initial 
 download into the proper track lists.
+
+BUGS
+- Identify live streams and ignore the download - These usually don't have accurate tracklists anyway
+
+TODO
+- Fix videos dictionary and move to an ordered list for manual selection
+- Implement duplicate song searches in ./Converted folder - Some file names differ by a period
+- Move files with no tracklist into a separete folder other than ./Music
+- Move track_time_name[] list away from global variable. Not really a problem, just isn't clean
+
+FUTURE TASKS
+- Move to a class based script to clean it up a bit. There are a lot of defs calling other defs
+- Potentially compile?
+- Standardize file name strings. Using way too many different methods to capture the file name
+- Move printing items to a single def and reference with an index number (case)
+- Move away from Youtube-dl and implement a faster method of extracting the audio from videos
+  - ffmpeg for conversion is really slow, but is good for splitting tracks (is immediate)
+
 """
 
 from apiclient.discovery import build
@@ -22,8 +40,6 @@ import shutil
 import collections
 import subprocess
 import shlex
-
-
 
 _youtube_key_ = './youtube.key'
 
@@ -111,7 +127,7 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   try:
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
     for line in process.stdout:
-      if line[7:] == "size=":
+      if line[5:] == "size=":
         print(line)
     #os.system(running_command)
     print '    [+] Track split'
@@ -144,7 +160,6 @@ def split_tracks(track_time_name, new_filename):
 
   total_duration = get_file_duration(new_filename)
 
-  # TODO:::
   for ln in track_time_name:
     
     try:
@@ -163,7 +178,6 @@ def split_tracks(track_time_name, new_filename):
       seconds = int(parts[0]) * 60 + int(parts[1])
     track_seconds.append(seconds)
 
-    # TODO: Fix track_seconds for different description formats
   index = 0
   for i, val in enumerate(track_title):
 
@@ -317,7 +331,7 @@ def youtube_search(options):
       
 
       if check_duplicates(title):
-        print "[!] Duplicate file found."
+        print "\n[!] Duplicate file found."
         pass
       else:
         print "\n[+] Starting Download and Conversion Process"
@@ -332,20 +346,14 @@ def youtube_search(options):
 
 if __name__ == "__main__":
 
-  # Check for directories and files prior to moving on
+  # Check for directories prior to moving on
   _music_ = './Music'
   _converted_ = './Converted'
-  _downloaded_db_ = './Downloaded_mp3.txt'
 
   if not os.path.isdir(_music_):
     os.makedirs(_music_)
   if not os.path.isdir(_converted_):
     os.makedirs(_converted_)
-  if not os.path.exists(_downloaded_db_):
-    open(_downloaded_db_, 'a').close()
-
-  
-
 
   search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
