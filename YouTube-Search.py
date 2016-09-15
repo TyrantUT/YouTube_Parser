@@ -20,6 +20,9 @@ import os
 import glob
 import shutil
 import collections
+import subprocess
+import shlex
+
 
 
 _youtube_key_ = './youtube.key'
@@ -100,15 +103,21 @@ def split_song_to_tracks(val, track_start, track_stop, new_filename):
   track_end = float(track_stop) - track_start
 
   running_command = audio_converter + command_input + input_file + command_start + str(track_start) + command_end + str(track_end) + command_codec + " " + output_file
-  
+  cmd = shlex.split(running_command)
+
   
   print '    [+] Attempting to split track ' + val
   print '    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop)
   try:
-    os.system(running_command)
-  except:
-    print '    [!] Unable to split track ' + val
-  print '    [+] Track split'
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+    for line in process.stdout:
+      if line[7:] == "size=":
+        print(line)
+    #os.system(running_command)
+    print '    [+] Track split'
+  except Exception, e:
+    print '    [!] Unable to split track ' + val + ' "' + str(e) + '"'
+  
   print '    [+] Attempting to move to ./Converted folder'
 
   try:
@@ -216,13 +225,14 @@ def download_mp3(title, video_id):
 
   track_time_name = [] # Reset global variable for next song
 
-def check_db(title, datafile):
-  for line in datafile:
-    if line.strip("\n") == title:
-      return True
-    else:
-      pass
-  return False
+def check_duplicates(title):
+
+  song = './Music/{0}.mp3'.format(title)
+
+  if os.path.exists(song):
+    return True
+  else:
+    return False
 
 def youtube_search(options):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
@@ -278,21 +288,16 @@ def youtube_search(options):
       title = title.encode('ascii', errors='ignore')
       single_video_id = videos.values()[int(download_number)]
       
-      print '[!] Checking database for duplicates'
-      datafile = open("./Downloaded_mp3.txt", "r+a")
+      print '[!] Checking music folder for duplicates'
 
-      if check_db(title, datafile):
+      if check_duplicates(title):
         print "[!] File found in database."
-        datafile.close()
-        time.sleep(1)
-        youtube_search(options)
+        time.speed(1)
+        youtube_search(options) 
 
       else:
-        print "[+] Starting Download and Conversion Process"
+        print "\n[+] Starting Download and Conversion Process"
         download_mp3(title, single_video_id)
-        print "    [+] Writing " + title + " to database"
-        datafile.write(title + '\n')
-        datafile.close()
         exit()
 
     else:
@@ -309,18 +314,15 @@ def youtube_search(options):
     for title, video_id in videos.items():
       
       title = title.encode('ascii', errors='ignore')
-      datafile = open("./Downloaded_mp3.txt", "r+a")
+      
 
-      if check_db(title, datafile):
-        print "[!] File found in database."
-        datafile.close()
+      if check_duplicates(title):
+        print "[!] Duplicate file found."
+        pass
       else:
-        print "[+] Starting Download and Conversion Process"
+        print "\n[+] Starting Download and Conversion Process"
         download_mp3(title, video_id)
 
-        print "    [+] Writing " + title + " to database"
-        datafile.write(title + '\n')
-        datafile.close()
   else:
     os.system('clear')
     print "[!] Please select 1, 2, or 3."
