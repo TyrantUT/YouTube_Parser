@@ -12,7 +12,7 @@ download into the proper track lists.
 - Move files with no tracklist into a separete folder other than ./Music
 - Move track_time_name[] list away from global variable. Not really a problem, just isn't clean
 
-#FUTURE TASKS# 
+#FUTURE TASKS#
 - Move to a class based script to clean it up a bit. There are a lot of defs calling other defs
 - Potentially compile?
 - Standardize file name strings. Using way too many different methods to capture the file name
