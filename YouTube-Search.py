@@ -22,6 +22,7 @@ import shutil
 import collections
 import subprocess
 import shlex
+import time
 
 _youtube_key_ = './youtube.key'
 
@@ -54,7 +55,7 @@ def restart_line():
 def my_hook(d):
     if d['status'] == 'downloading':
         print '    [+] Download speed: ' + d['_speed_str'] + ' \t\t Percent Complete: ' + d['_percent_str'],
-        sys.stdout.flush()
+        #sys.stdout.flush()
         restart_line()
         
     if d['status'] == 'finished':
@@ -132,13 +133,29 @@ def get_file_duration(new_filename):
     return output
   else:
     print '    [!] Could not extract duration of song'
+    print '[!] QUITTING. Find a new song!'
+    quit()
+
+def write_track_to_file(new_filename, track_title, track_seconds):
+
+  # Output file will be the title of the main downloaded YouTube file
+  txt_file_name = new_filename.replace('./Music/', '').replace('.mp3', '')
+  
+  # Create a new empty file for appending
+  output_txt = './Tracklist/' + txt_file_name + '.txt'
+  title_txt_file = open(output_txt, 'a')
+  title_txt_file.write(txt_file_name) + '\n\n'
+  for index, value in enumerate(track_seconds):
+    title_time = time.strftime("%H:%M:%S", time.gmtime(value))
+    title_txt_file.write('[' + str(title_time) + '] ' + track_title[index] + '\n')
+
+  title_txt_file.close()
 
 
 def split_tracks(track_time_name, new_filename):
   
   track_title = []
   track_seconds = []
-  track_num = len(track_title)
 
   total_duration = get_file_duration(new_filename)
 
@@ -169,6 +186,9 @@ def split_tracks(track_time_name, new_filename):
     else:
       split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1], new_filename)
       index += 1
+
+  write_track_to_file(new_filename, track_title, track_seconds)
+  print '    [+] Tracklist written to file.'
 
   track_title = []
   track_seconds = []
@@ -272,18 +292,18 @@ def youtube_search(options):
   if yes_no == '1':
 
     print '\n'
-    download_number = raw_input("Please enter the number of the video you want to download: ")
+    download_number = int(raw_input("Please enter the number of the video you want to download: "))
     print '\n'
-    download_number =- 1
-    print 'You selected: ' + videos.keys()[download_number]
+
+    download_number -= 1
+
+    print 'You selected: ' + videos.keys()[int(download_number)]
     new_yes = raw_input("Do you want to continue or select a new song? (yes to continue) ")
    
     if new_yes == 'yes':
-
       title = videos.keys()[int(download_number)]
-      title = title.encode('ascii', errors='ignore')
+      title = title.encode('ascii', errors='ignore').replace('/', '').replace('"', '')
       single_video_id = videos.values()[int(download_number)]
-      
       print '[!] Checking music folder for duplicates'
 
       if check_duplicates(title):
@@ -309,7 +329,7 @@ def youtube_search(options):
     # Call the check database file
     for title, video_id in videos.items():
       
-      title = title.encode('ascii', errors='ignore')
+      title = title.encode('ascii', errors='ignore').replace('/', '').replace('"', '')
       
 
       if check_duplicates(title):
@@ -331,11 +351,14 @@ if __name__ == "__main__":
   # Check for directories prior to moving on
   _music_ = './Music'
   _converted_ = './Converted'
+  _tracklist_ = './Tracklist'
 
   if not os.path.isdir(_music_):
     os.makedirs(_music_)
   if not os.path.isdir(_converted_):
     os.makedirs(_converted_)
+  if not os.path.isdir(_tracklist_):
+    os.makedirs(_tracklist_)
 
   search_string = raw_input("Please enter a keyword to search: ")
   argparser.add_argument("--q", help="Search term", default=search_string)
