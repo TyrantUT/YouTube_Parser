@@ -307,7 +307,7 @@ def youtube_search(options):
 
       if check_duplicates(title):
         print "[!] File found in database."
-        time.speed(1)
+        time.sleep(1)
         youtube_search(options) 
 
       else:
@@ -368,3 +368,4 @@ if __name__ == "__main__":
     youtube_search(args)
   except HttpError, e:
     print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
+    

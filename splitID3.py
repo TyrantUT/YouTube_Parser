@@ -2,16 +2,13 @@
 """
 Python script to parse converted folder and start adding ID3 tags
 """
-
-
 from mutagen.easyid3 import EasyID3
-import os
 from os import walk
-
-_musicFolder_ = './Converted/'
+import os
 
 def splitID3():
 
+  _musicFolder_ = './Converted/'
   file_list = []
   artist_title = []
 
@@ -46,6 +43,7 @@ def splitID3():
 
   	except Exception, e:
   	 	print str(e)
+
 
 if __name__ == "__main__":
   splitID3()
