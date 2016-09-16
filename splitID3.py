@@ -41,7 +41,6 @@ def splitID3():
   	  	meta['title'] = title
   	  	meta['genre'] = "Dubstep"
   	  	meta.save()
-        print '[+] ID3 Tags generated.'
   	  else:
   	  	pass
 

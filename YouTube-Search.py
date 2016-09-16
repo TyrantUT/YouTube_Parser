@@ -55,7 +55,6 @@ def restart_line():
 def my_hook(d):
     if d['status'] == 'downloading':
         print '    [+] Download speed: ' + d['_speed_str'] + ' \t\t Percent Complete: ' + d['_percent_str'],
-        #sys.stdout.flush()
         restart_line()
         
     if d['status'] == 'finished':
@@ -144,7 +143,7 @@ def write_track_to_file(new_filename, track_title, track_seconds):
   # Create a new empty file for appending
   output_txt = './Tracklist/' + txt_file_name + '.txt'
   title_txt_file = open(output_txt, 'a')
-  title_txt_file.write(txt_file_name) + '\n\n'
+  title_txt_file.write(txt_file_name + '\n\n')
   for index, value in enumerate(track_seconds):
     title_time = time.strftime("%H:%M:%S", time.gmtime(value))
     title_txt_file.write('[' + str(title_time) + '] ' + track_title[index] + '\n')
