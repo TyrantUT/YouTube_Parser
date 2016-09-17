@@ -6,19 +6,18 @@ and convert to MP3, search through the video Description for a tracklist and spl
 download into the proper track lists.
 
 ##BUGS##
-- Identify live streams and ignore the download - These usually don't have accurate tracklists anyway
+- Identify live streams and ignore the download
 
 ##TODO##
 - [X] Fix videos dictionary and move to an ordered list for manual selection
 - Implement duplicate song searches in ./Converted folder - Some file names differ by a period
 - Move files with no tracklist into a separete folder other than ./Music
-- Move track_time_name[] list away from global variable. Not really a problem, just isn't clean
+- [X] Move track_time_name[] list away from global variable. Not really a problem, just isn't clean
 - [X] Create txt file for each downloaded mix with the tracklist and times for future reference
-- [X] Generate ID3 tags for split files (splitID3.py)
+- [X] Generate ID3 tags for split files
 
 #FUTURE TASKS#
-- Move to a class based script to clean it up a bit. There are a lot of defs calling other defs
-- Potentially compile?
+- [X] Move to a class based script to clean it up a bit. There are a lot of defs calling other defs
 - Standardize file name strings. Using way too many different methods to capture the file name
 - Move printing items to a single def and reference with an index number (case)
 - Move away from Youtube-dl and implement a faster method of extracting the audio from videos
