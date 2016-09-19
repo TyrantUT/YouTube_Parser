@@ -204,6 +204,7 @@ class GenerateID3(object):
           meta['artist'] = artist
           meta['title'] = title
           meta['genre'] = "Dubstep"
+          meta['album'] = "Dubstep"
           meta.save()
         else:
           pass
@@ -307,13 +308,13 @@ def youtube_search(options):
     maxResults=options.max_results
   ).execute()
 
-# TODO: Modify the dictionary to a list for proper individual file download handling
   videos = {}
   # Add each result to the appropriate dictionary
   for search_result in search_response.get("items", []):
     if search_result["id"]["kind"] == "youtube#video":
-      video_id_dict = search_result["id"]["videoId"]
-      videos.update({search_result["snippet"]["title"]: video_id_dict})
+      yt_video_title = search_result["snippet"]["title"]
+      yt_video_id = search_result["id"]["videoId"]
+      videos.update({yt_video_title: yt_video_id})
 
   # Create ordred dictionary for videos
   videos = collections.OrderedDict(videos)
