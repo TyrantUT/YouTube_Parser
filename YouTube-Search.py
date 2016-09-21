@@ -6,26 +6,27 @@ and convert to MP3, search through the video Description for a tracklist and spl
 download into the proper track lists.
 """
 
-from apiclient.discovery import build
-from apiclient.errors import HttpError
-from oauth2client.tools import argparser
-from mutagen.easyid3 import EasyID3
-from termcolor import colored
-import youtube_dl
-import sys
-import urlparse
+import collections
+import glob
 import json
+import os
 import re
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+import time
 import urllib
 import urllib2
-import time
-import os
-import glob
-import shutil
-import collections
-import subprocess
-import shlex
-import time
+import urlparse
+import youtube_dl
+
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from mutagen.easyid3 import EasyID3
+from oauth2client.tools import argparser
+from termcolor import colored
 
 _youtube_key_ = './youtube.key'
 
