@@ -33,8 +33,6 @@ if not os.path.exists(_youtube_key_):
   print '[!] Unable to find YouTube API Key File. Please re-create and try again.'
   quit()
 
-#track_time_name = []
-
 with open('./youtube.key', 'r') as k:
   DEVELOPER_KEY = k.readline()
 
@@ -47,8 +45,13 @@ def color_print(p_string, color):
 # ManageTracks objects handle all track parsing, splitting, and renaming operations
 class ManageTracks(object):
 
-  def __init__(self, mt_id = None):
-    self.mt_id = mt_id
+  def __init__(self, mt_id, mt_vt):
+
+    self.mt_id = mt_id # YouTube Video ID
+    self.mt_vt = mt_vt # YouTube Video Title
+
+    # Variables to be used throughout class
+    self.mt_fn = './Music/' + mt_vt + '.mp3' # YouTube Video Filename
 
   def get_tracklist(self):
 
@@ -72,12 +75,15 @@ class ManageTracks(object):
     for line in meta.splitlines():
       if re.match('.*?\d{1,2}:\d{2}', line):
         track_time_name.append(line)
+
+    for u in track_time_name:
+      print u
     return track_time_name
 
-  def get_file_duration(self, new_filename):
+  def get_file_duration(self):
     cmd1 = "ffprobe -i "
     cmd2 = " -show_entries format=duration -v quiet -of csv='p=0'"
-    full_command = cmd1 + '"' + new_filename + '"' + cmd2
+    full_command = cmd1 + '"' + self.mt_fn + '"' + cmd2
     output = os.popen(full_command).read().strip("\n")
     if output:
       return output
@@ -86,29 +92,28 @@ class ManageTracks(object):
       color_print('[!] QUITTING. Find a new song!', 'yellow')
       quit()
 
-  def write_track_to_file(self, new_filename, track_title, track_seconds):
+  def write_track_to_file(self, track_title, track_seconds):
 
     # Output file will be the title of the main downloaded YouTube file
-    txt_file_name = new_filename.replace('./Music/', '').replace('.mp3', '')
-  
     # Create a new empty file for appending
-    output_txt = './Tracklist/' + txt_file_name + '.txt'
+
+    output_txt = './Tracklist/' + self.mt_vt + '.txt'
     title_txt_file = open(output_txt, 'a')
-    title_txt_file.write(txt_file_name + '\n\n')
+    title_txt_file.write(self.mt_vt + '\n\n')
     for index, value in enumerate(track_seconds):
       title_time = time.strftime("%H:%M:%S", time.gmtime(value))
       title_txt_file.write('[' + str(title_time) + '] ' + track_title[index] + '\n')
 
     title_txt_file.close()
 
-  def split_song_to_tracks(self, val, track_start, track_stop, new_filename):
+  def split_song_to_tracks(self, val, track_start, track_stop):
 
     audio_converter = 'ffmpeg'
     command_start = ' -ss '
     command_end = ' -t '
     command_input = ' -i '
     command_codec = ' -acodec copy '
-    input_file = '"' + new_filename + '"'
+    input_file = '"' + self.mt_fn + '"'
     output_file = '"' + val + '.mp3"'
 
     # Handle final track float for track duration float
@@ -142,18 +147,18 @@ class ManageTracks(object):
       #print '    [!] Unable to move file. ' + str(e)
       color_print('    [!] Unable to move file. ' + str(e), 'red')
 
-  def split_tracks(self, track_time_name, new_filename):
+  def split_tracks(self, track_time_name):
   
     track_title = []
     track_seconds = []
 
-    total_duration = self.get_file_duration(new_filename)
+    total_duration = self.get_file_duration()
 
     for ln in track_time_name:
     
       try:
         track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
-        track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0)
+        track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0).encode('ascii', errors='ignore').replace('/', '').replace('"', '')
       except Exception, e:
         #print '    [!] Unable to parse strings. ' + str(e)
         color_print('    [!] Unable to parse strings. ' + str(e), 'red')
@@ -172,13 +177,13 @@ class ManageTracks(object):
     for i, val in enumerate(track_title):
 
       if index == len(track_title) - 1:
-        self.split_song_to_tracks(val, track_seconds[index], total_duration, new_filename)
+        self.split_song_to_tracks(val, track_seconds[index], total_duration)
 
       else:
-        self.split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1], new_filename)
+        self.split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1])
         index += 1
 
-    self.write_track_to_file(new_filename, track_title, track_seconds)
+    self.write_track_to_file(track_title, track_seconds)
     #print '    [+] Tracklist written to file.'
     #print '    [+] Attempting to write ID3 tags'
     color_print('    [+] Tracklist written to file.', 'green')
@@ -300,18 +305,17 @@ def download_mp3(title, video_id):
     color_print('[!] Unable to rename file', str(e), 'red')
   
   # Initiate track clalss
-  new_filename = './Music/' + title + '.mp3'
-  track_class = ManageTracks(video_id)
+  track_class = ManageTracks(video_id, title)
   
   try:
     init_tracklist = track_class.get_tracklist()
     #print '    [+] Tracklist Detected. Attempting to split tracks'
     color_print('    [+] Tracklist Detected. Attempting to split tracks', 'yellow')
-    track_class.split_tracks(init_tracklist, new_filename)
+    track_class.split_tracks(init_tracklist)
 
-  except:
+  except Exception, e:
     #print '    [!] Unable to detect tracklist'
-    color_print('    [!] Unable to detect tracklist', 'red')
+    color_print('    [!] Unable to detect tracklist' + str(e), 'red')
 
 
 def check_duplicates(title):
