@@ -6,6 +6,8 @@ from mutagen.easyid3 import EasyID3
 from os import walk
 import os
 from termcolor import colored
+import re
+import shutil
 
 def color_print(p_string, color):
   print colored(p_string, color)
@@ -20,6 +22,11 @@ def splitID3():
     file_list.extend(filenames)
     break
   for mp3_file in file_list:
+    regex = re.compile(r'(\d{1,3}:\d{2}(:\d{2})?)')
+    string = regex.findall(mp3_file)
+    if string:
+      new_title = mp3_file.replace(string[0][0], '').replace('.mp3', '').strip()
+      shutil.move(_musicFolder_ + mp3_file, _musicFolder_ + new_title + '.mp3')
     try:
       artist_title = mp3_file.split(' - ')
       if len(artist_title) == 2:
@@ -27,13 +34,13 @@ def splitID3():
         artist = artist_title[0]
         title = artist_title[1].replace('.mp3', '')
         color_print('[+] Starting ID3 tag edit for ' + artist + ' - ' + title, 'blue')
-        #print '[+] Starting ID3 tag edit for ' + artist + ' - ' + title
         try:
           meta = EasyID3(filePath)
         except mutagen.id3.ID3NoHeaderError:
           meta = mutagen.File(filePath, easy=True)
           meta.add_tags()
         meta['artist'] = artist
+        meta['albumartist'] = artist
         meta['title'] = title
         meta['genre'] = "Dubstep"
         meta['album'] = "Dubstep"
