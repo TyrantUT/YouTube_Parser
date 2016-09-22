@@ -28,13 +28,12 @@ from mutagen.easyid3 import EasyID3
 from oauth2client.tools import argparser
 from termcolor import colored
 
-_youtube_key_ = './youtube.key'
+_youtube_key_ = './youtube.key' # YouTube Developer API Key file
 
-if not os.path.exists(_youtube_key_):
+# TODO: If file does not exist, prompt to create it and enter key at console
+if not os.path.exists(_youtube_key_): # Check if file exists
   print '[!] Unable to find YouTube API Key File. Please re-create and try again.'
   quit()
-
-#track_time_name = []
 
 with open('./youtube.key', 'r') as k:
   DEVELOPER_KEY = k.readline()
@@ -42,11 +41,11 @@ with open('./youtube.key', 'r') as k:
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
-def color_print(p_string, color):
+def color_print(p_string, color): # Function to print color to console
+
   print colored(p_string, color)
 
-# ManageTracks objects handle all track parsing, splitting, and renaming operations
-class ManageTracks(object):
+class ManageTracks(object): # ManageTracks objects handle all track parsing, splitting, and renaming operations
 
   def __init__(self, mt_id, mt_fn):
     # Class variables from call
@@ -56,7 +55,7 @@ class ManageTracks(object):
     # Variables to be used throughout the class 
     self.mt_tn = mt_fn.replace('./Music/', '').replace('.mp3', '') # Track Name of initial download
 
-  def get_tracklist(self):
+  def get_tracklist(self): # Extract description from YouTube video
 
     video_url = 'https://www.googleapis.com/youtube/v3/videos?id=' + self.mt_id + '&key=' + DEVELOPER_KEY.strip('\n') + '&part=snippet'
     response = urllib2.urlopen(video_url)
@@ -72,7 +71,7 @@ class ManageTracks(object):
     except:
       return False
 
-  def parse_tracklist(self, meta):
+  def parse_tracklist(self, meta): # Helper function to find matching lines with valid timestamps
 
     track_time_name = []
     for line in meta.splitlines():
@@ -80,7 +79,8 @@ class ManageTracks(object):
         track_time_name.append(line)
     return track_time_name
 
-  def get_file_duration(self):
+  def get_file_duration(self): # Get  song duration of intitla download / converted file
+
     cmd1 = "ffprobe -i "
     cmd2 = " -show_entries format=duration -v quiet -of csv='p=0'"
     full_command = cmd1 + '"' + self.mt_fn + '"' + cmd2
@@ -92,17 +92,16 @@ class ManageTracks(object):
       color_print('    [!] QUITTING. Find a new song!', 'yellow')
       quit()
 
-  def write_track_to_file(self, track_title, track_seconds):
+  def write_tracklist_to_txt(self, track_title, track_seconds):
 
-    # Create a new empty file for appending
-    output_txt = './Tracklist/' + self.mt_tn + '.txt'
-    title_txt_file = open(output_txt, 'a')
-    title_txt_file.write(self.mt_tn + '\n\n')
-    for index, value in enumerate(track_seconds):
-      title_time = time.strftime("%H:%M:%S", time.gmtime(value))
-      title_txt_file.write('[' + str(title_time) + '] ' + track_title[index] + '\n')
+    output_txt = './Tracklist/' + self.mt_tn + '.txt' # Create a new file with the name of the inital download
+    title_txt_file = open(output_txt, 'a') # Create new file for appending
+    title_txt_file.write(self.mt_tn + '\n\n') # Write main title to first line
+    for index, value in enumerate(track_seconds): # Enumerate through each item in track_title and track_seconds
+      title_time = time.strftime("%H:%M:%S", time.gmtime(value)) # Format seonds to valid timestamp
+      title_txt_file.write('[' + str(title_time) + '] ' + track_title[index] + '\n') # Finally write timestamp and title to file
 
-    title_txt_file.close()
+    title_txt_file.close() # Close txt file
 
   def split_song_to_tracks(self, val, track_start, track_stop):
 
@@ -113,10 +112,9 @@ class ManageTracks(object):
     command_input = ' -i ' # Input file
     command_codec = ' -acodec copy ' # Codec and method
     input_file = '"' + self.mt_fn + '"' # Need to handle spaces in file name
-    output_file = '"' + val + '.mp3"' # Need to handle spaces in file name
+    output_file = '"./Converted/' + val + '.mp3"' # Need to handle spaces in file name
 
-    # Handle final track float for track duration float
-    track_end = float(track_stop) - track_start
+    track_end = float(track_stop) - track_start # Handle final track float for track duration float
 
     running_command = audio_converter + command_input + input_file + command_start + str(track_start) + \
      command_end + str(track_end) + command_codec + " " + output_file
@@ -126,37 +124,32 @@ class ManageTracks(object):
     color_print('    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop), 'green')
 
     try:
-      process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+      process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True) # So we can grab only what we want from the command
       for line in process.stdout:
-        if line[:5] == "size=":
-          regex = re.compile(r'(\d+)([kgtb]?b).*?bitrate=\s*(\d+\.\d+)kbits\/s', re.IGNORECASE)
-          track_details = regex.findall(line)
+        if line[:5] == "size=": # Check for the line we're going to use to write to console
+          regex = re.compile(r'(\d+)([kgtb]?b).*?bitrate=\s*(\d+\.\d+)kbits\/s', re.IGNORECASE) # REGEX to grab only what we need
+          track_details = regex.findall(line) # Run REGEX on the line string
           color_print('    [+] File Size: ' + track_details[0][0] + ' ' + track_details[0][1] + '\t\tBitrate= ' + track_details[0][2], 'yellow')
       
       color_print('    [+] Track split', 'white')
+      color_print('    [+] Track written to ./Convertd folder', 'green')
+
     except Exception, e:   
       color_print('    [!] Unable to split track ' + val + ' "' + str(e) + '"', 'red')
    
-    color_print('    [+] Attempting to move to ./Converted folder', 'green')
-
-    try:
-      shutil.move('./' + val + '.mp3', './Converted/' + val + '.mp3')
-    except Exception, e:
-      #print '    [!] Unable to move file. ' + str(e)
-      color_print('    [!] Unable to move file. ' + str(e), 'red')
-
   def split_tracks(self, track_time_name):
   
-    track_title = []
-    track_seconds = []
+    track_title = [] # List for the titles of each individual track
+    track_seconds = [] # List of each track duration in seconds
 
-    total_duration = self.get_file_duration()
+    total_duration = self.get_file_duration() # Grab file duration of initial downloaded file
 
     for ln in track_time_name:
     
       try:
         track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
         track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0)
+        track_name = track_name.strip(track_time).strip() # Strip track_time just in case it is written after the track title
       except Exception, e:
         #print '    [!] Unable to parse strings. ' + str(e)
         color_print('    [!] Unable to parse strings. ' + str(e), 'red')
@@ -165,28 +158,28 @@ class ManageTracks(object):
 
       parts = track_time.split(':')
       seconds = None
-      if len(parts) == 3: # h:m:s
+      if len(parts) == 3: # Account for H:M:S
         seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-      elif len(parts) == 2: # m:s
+      elif len(parts) == 2: # Accont for M:S
         seconds = int(parts[0]) * 60 + int(parts[1])
       track_seconds.append(seconds)
 
     index = 0
     for i, val in enumerate(track_title):
 
-      if index == len(track_title) - 1:
-        self.split_song_to_tracks(val, track_seconds[index], total_duration)
+      if index == len(track_title) - 1: # Determine if the last track is up to be split
+        self.split_song_to_tracks(val, track_seconds[index], total_duration) # Account for last track to split to end of initial song
 
       else:
-        self.split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1])
+        self.split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1]) # Split track up to the start of the next track
         index += 1
 
-    self.write_track_to_file(track_title, track_seconds)
-    #print '    [+] Tracklist written to file.'
-    #print '    [+] Attempting to write ID3 tags'
+    self.write_tracklist_to_txt(track_title, track_seconds) # Write tracklist to txt file for future reference
+
     color_print('    [+] Tracklist written to file.', 'green')
     color_print('    [+] Attempting to write ID3 tags', 'blue')
-    try:
+
+    try: # Try to generate ID3 tags for track title
       id3 = GenerateID3(track_title)
       id3.writeID3()
     except:
