@@ -76,8 +76,6 @@ class ManageTracks(object):
       if re.match('.*?\d{1,2}:\d{2}', line):
         track_time_name.append(line)
 
-    for u in track_time_name:
-      print u
     return track_time_name
 
   def get_file_duration(self):
