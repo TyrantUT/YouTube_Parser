@@ -23,36 +23,8 @@ def splitID3():
     break
   counter = 0
   for mp3_file in file_list:
-    filename = mp3_file.split(' - ')
-    if len(filename) == 2:
-
-      regex = re.compile(r'(\(\w+.*?\))')
-      #regex = re.compile(r'(\d{1,3}:\d{2}(:\d{2})?)')
-      regex2 = re.compile(r'(\[\w+.*?\])')
-      string = regex.findall(mp3_file)
-      string2 = regex2.findall(mp3_file)
-      # Remove anythign betwen []
-      if string2:
-        fn =  mp3_file.replace(string2[0], '').replace('  ', ' ').replace('.mp3', '').strip()
-        color_print('Renaming ' + _musicFolder_ + mp3_file + ' to ' + _musicFolder_ + fn + '.mp3', 'blue')
-        shutil.move(_musicFolder_ + mp3_file, _musicFolder_ + fn + '.mp3')
-
-      # Remove anything between ()
-      if len(string) == 1:
-        fn =  mp3_file.replace(string[0], '').replace('  ', ' ').replace('.mp3', '').strip()
-      elif len(string) == 2:
-        fn = mp3_file.replace(string[0], '').replace(string[1], '').replace('  ', ' ').replace('.mp3', '').strip()
-      elif len(string) < 1:
-        pass
-      try:
-        color_print('Renaming ' + _musicFolder_ + mp3_file + ' to ' + _musicFolder_ + fn + '.mp3', 'blue')
-        shutil.move(_musicFolder_ + mp3_file, _musicFolder_ + fn + '.mp3')
-      except Exception, e:
-        color_print('No need to alter any filenames!', 'red')
-    else:
-      pass
-
-
+    #regex = re.compile(r'(\d{1,3}:\d{2}(:\d{2})?)')
+     
     try:
       artist_title = mp3_file.split(' - ')
       if len(artist_title) == 2:
@@ -75,8 +47,7 @@ def splitID3():
         pass
     except Exception, e:
       print str(e)
-    counter += 1
-  print counter
+
 if __name__ == "__main__":
   splitID3()
 
