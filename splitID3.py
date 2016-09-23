@@ -23,8 +23,14 @@ def splitID3():
     break
   counter = 0
   for mp3_file in file_list:
-    #regex = re.compile(r'(\d{1,3}:\d{2}(:\d{2})?)')
-     
+    regex = re.compile(r'([\(|\[]\w+.*[\]|\)])')
+    string = regex.findall(mp3_file)
+    if string:
+      file_name = mp3_file.replace(string[0], '')
+      file_name = file_name.replace('.mp3', '').strip() + '.mp3'
+      color_print(_musicFolder_ + mp3_file + ' to ' + _musicFolder_ + file_name, 'yellow')
+      shutil.move(_musicFolder_ + mp3_file, _musicFolder_ + file_name)
+
     try:
       artist_title = mp3_file.split(' - ')
       if len(artist_title) == 2:

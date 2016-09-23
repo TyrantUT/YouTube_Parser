@@ -145,8 +145,29 @@ class ManageTracks(object):
       #print '    [!] Unable to move file. ' + str(e)
       color_print('    [!] Unable to move file. ' + str(e), 'red')
 
+  def sanitize_title(self, track_name, track_time):
+
+    # ASCII encode
+    track_name = track_name.encode('ascii', errors='ignore')
+
+    # Replace /, ", spaces
+    track_name = track_name.replace('/', '').replace('"', '').replace(track_time, '')
+
+    # Remove all entries between () and []
+    regex = re.compile(r'([\(|\[]\w+.*[\]|\)])')
+    string = regex.findall(track_name)
+    
+    # Strip off what was found (TODO: Fix regex so it doens't capture songs like 'Artist - Title (Something) More Title (Something else)')
+    if string:
+      file_name = track_name.replace(string[0], '')
+      file_name = file_name.replace('.mp3', '').strip() + '.mp3'
+      color_print('    [+] Sanatized song title ' + track_name + ' to ' + file_name, 'green')
+      return file_name
+    else:
+      return track_name
+
   def split_tracks(self, track_time_name):
-  
+
     track_title = []
     track_seconds = []
 
@@ -156,9 +177,10 @@ class ManageTracks(object):
     
       try:
         track_time = re.search('\d{1,3}:\d{2}(:\d{2})?', ln).group(0)
-        track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0).encode('ascii', errors='ignore').replace('/', '').replace('"', '')
+        track_name = re.search('[a-zA-Z]+.*[^0-9]*', ln).group(0)
+        track_name = self.sanitize_title(track_name, track_time)
       except Exception, e:
-        #print '    [!] Unable to parse strings. ' + str(e)
+        
         color_print('    [!] Unable to parse strings. ' + str(e), 'red')
 
       track_title.append(track_name)
@@ -182,15 +204,13 @@ class ManageTracks(object):
         index += 1
 
     self.write_track_to_file(track_title, track_seconds)
-    #print '    [+] Tracklist written to file.'
-    #print '    [+] Attempting to write ID3 tags'
+
     color_print('    [+] Tracklist written to file.', 'green')
     color_print('    [+] Attempting to write ID3 tags', 'blue')
     try:
       id3 = GenerateID3(track_title)
       id3.writeID3()
-    except:
-      #print '    [!] Unable to write ID3 tags'
+    except:  
       color_print('    [!] Unable to write ID3 tags', 'red')
 
 # GenerateID3 objects handle all ID3 operations on converted MP3 files
@@ -211,7 +231,7 @@ class GenerateID3(object):
           file_path = _musicFolder_ + mp3_file
           artist = artist_title[0]
           title = artist_title[1].replace('.mp3', '')
-          #print '    [+] Starting id3 tag edit for ' + artist + ' - ' + title
+          
           color_print('    [+] Starting id3 tag edit for ' + artist + ' - ' + title, 'blue')
 
           try:
@@ -272,34 +292,33 @@ def download_mp3(title, video_id):
   with youtube_dl.YoutubeDL(ydl_opts) as ydl:
     #info_dict = ydl.extract_info(url, download=False)
     #pre_title = info_dict.get('title', None)
-    #print '    [+] Now downloading: ' + title + '.mp3'
+    
     color_print('    [+] Now downloading: ' + title + '.mp3', 'blue')
     try:
       ydl.download([url])
-      #print '    [+] Download and Conversion complete'
-      #print '    [+] Renaming file'
+
       color_print('    [+] Download and Conversion complete', 'green')
       color_print('    [+] Renaming file', 'blue')
     except:
       webm = max(glob.iglob('./*.[Ww][Ee][Bb][Mm]'), key=os.path.getctime)
       if os.path.isfile(webm):
         try:
-          #print '    [+] Attempting to convert directly.'
+          
           color_print('    [+] Attempting to convert directly.', 'blue')
-          os.system('ffmpeg -i ' + '"' + webm + '"' + ' -vn -c:a libmp3lame -b:a 128k ' + '"' + title + '"' + '.mp3')
+          os.system('ffmpeg -i ' + '"' + webm + '"' + ' -vn -c:a libmp3lame -b:a 192k ' + '"' + title + '"' + '.mp3')
         except:
-          #print '    [+] Failed to download / convert MP3'
+          
           color_print('    [+] Failed to download / convert MP3', 'red')
-        #print '    [+] Failed to download / convert MP3'
+        
         color_print('    [+] Failed to download / convert MP3', 'red')
 
   try:
     newest = max(glob.iglob('./*.[Mm][Pp]3'), key=os.path.getctime)
     os.rename(newest, './Music/' + title + '.mp3')
-    #print '    [+] Renaming complete'
+    
     color_print('    [+] Renaming complete', 'green')
   except Exception, e:
-    #print '[!] Unable to rename file', str(e)
+    
     color_print('[!] Unable to rename file', str(e), 'red')
   
   # Initiate track clalss
@@ -307,12 +326,12 @@ def download_mp3(title, video_id):
   
   try:
     init_tracklist = track_class.get_tracklist()
-    #print '    [+] Tracklist Detected. Attempting to split tracks'
+    
     color_print('    [+] Tracklist Detected. Attempting to split tracks', 'yellow')
     track_class.split_tracks(init_tracklist)
 
   except Exception, e:
-    #print '    [!] Unable to detect tracklist'
+    
     color_print('    [!] Unable to detect tracklist' + str(e), 'red')
 
 
@@ -325,12 +344,18 @@ def check_duplicates(title):
   else:
     return False
 
+def detect_livestream(title):
+  regex = re.compile(r'(live\s?stream)', re.IGNORECASE)
+  if regex.findall(title):
+    return True
+  else:
+    return False
+
 def youtube_search(options):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
     developerKey=DEVELOPER_KEY)
 
-  # Call the search.list method to retrieve results matching the specified
-  # query term.
+  # Call the search.list method to retrieve results matching the query string
   search_response = youtube.search().list(
     q=options.q,
     part="id,snippet",
@@ -351,7 +376,7 @@ def youtube_search(options):
   # Print titles found and prompt to continue
   os.system('clear')
 
-  #print "\nThis is what I found\n"
+  
   color_print('\nThis is what I found\n', 'yellow')
   counter = 1
   for title, video_id in videos.items():
@@ -373,7 +398,7 @@ def youtube_search(options):
 
     download_number -= 1
 
-    #print 'You selected: ' + videos.keys()[int(download_number)]
+    
     color_print('You selected: ' + videos.keys()[int(download_number)], 'yellow')
     new_yes = raw_input("Do you want to continue or select a new song? (yes to continue) ")
     
@@ -381,19 +406,23 @@ def youtube_search(options):
     if new_yes == 'yes':
       title = videos.keys()[int(download_number)]
       title = title.encode('ascii', errors='ignore').replace('/', '').replace('"', '')
+      if detect_livestream(title):
+        color_print('[!] Live Stream found, please select another video to download.', 'red')
+        youtube_search(options)
+
       single_video_id = videos.values()[int(download_number)]
-      #print '[!] Checking music folder for duplicates'
+      
       color_print('[!] Checking music folder for duplicates', 'blue')
       
       # Check for duplicated, if found re-run function
       if check_duplicates(title):
-        #print "[!] File found in database."
+        
         color_print('[!] File found in database.', 'red')
         time.sleep(1)
         youtube_search(options) 
 
       else:
-        #print "\n[+] Starting Download and Conversion Process"
+        
         color_print('\n[+] Starting Download and Conversion Process', 'green')
         download_mp3(title, single_video_id)
         quit()
@@ -414,26 +443,28 @@ def youtube_search(options):
     for title, video_id in videos.items():
       
       title = title.encode('ascii', errors='ignore').replace('/', '').replace('"', '')
-
-      # Check for duplicated, if found pass the file
-      if check_duplicates(title):
-        #print "\n[!] Duplicate file found."
-        color_print('\n[!] Duplicate file found.', 'red')
+      if detect_livestream(title):
+        color_print('[!] Live Stream found, please select another video to download.', 'red')
         pass
       else:
-        #print "\n[+] Starting Download and Conversion Process"
-        color_print('\n[+] Starting Download and Conversion Process', 'green')
-        download_mp3(title, video_id)
+
+        # Check for duplicated, if found pass the file
+        if check_duplicates(title):
+          
+          color_print('\n[!] Duplicate file found.', 'red')
+          pass
+        else:
+          
+          color_print('\n[+] Starting Download and Conversion Process', 'green')
+          download_mp3(title, video_id)
 
   else:
     os.system('clear')
-    #print "[!] Please select 1, 2, or 3."
+    
     color_print('[!] Please select 1, 2, or 3.', 'red')
     time.sleep(2)
     os.system('clear')
     youtube_search(options)
-      
-
 
 if __name__ == "__main__":
 
