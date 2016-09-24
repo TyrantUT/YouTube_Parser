@@ -22,37 +22,32 @@ def splitID3():
     file_list.extend(filenames)
     break
   counter = 0
+  regex = re.compile(r'\w+(\s\s)\w+')
+
   for mp3_file in file_list:
-    regex = re.compile(r'([\(|\[]\w+.*[\]|\)])')
     string = regex.findall(mp3_file)
     if string:
-      file_name = mp3_file.replace(string[0], '')
-      file_name = file_name.replace('.mp3', '').strip() + '.mp3'
-      color_print(_musicFolder_ + mp3_file + ' to ' + _musicFolder_ + file_name, 'yellow')
-      shutil.move(_musicFolder_ + mp3_file, _musicFolder_ + file_name)
-
-    try:
-      artist_title = mp3_file.split(' - ')
+      fn =  mp3_file.replace('  ', ' - ')
+    #fn = mp3_file.replace('.mp3.mp3', '.mp3')
+      shutil.move(_musicFolder_ + mp3_file, _musicFolder_ + fn)
+      artist_title = fn.split(' - ')
+        
       if len(artist_title) == 2:
-        filePath = _musicFolder_ + mp3_file
         artist = artist_title[0]
         title = artist_title[1].replace('.mp3', '')
-        color_print('[+] Starting ID3 tag edit for ' + artist + ' - ' + title, 'blue')
-        try:
-          meta = EasyID3(filePath)
-        except mutagen.id3.ID3NoHeaderError:
-          meta = mutagen.File(filePath, easy=True)
-          meta.add_tags()
-        meta['artist'] = artist
-        meta['albumartist'] = artist
-        meta['title'] = title
-        meta['genre'] = "Dubstep"
-        meta['album'] = "Dubstep"
-        meta.save()
-      else:
-        pass
-    except Exception, e:
-      print str(e)
+
+      try:
+        meta = EasyID3(_musicFolder_ + fn)
+      except mutagen.id3.ID3NoHeaderErrors:
+        meta = mutagen.File(_musicFolder_ + fn, easy=True)
+        meta.add_tags()
+        
+      color_print('    [+] Starting id3 tag edit for ' + artist + ' - ' + title, 'blue')
+      meta['artist'] = artist
+      meta['title'] = title
+      meta['genre'] = "Dubstep"
+      meta['album'] = "Dubstep"
+      meta.save()
 
 if __name__ == "__main__":
   splitID3()

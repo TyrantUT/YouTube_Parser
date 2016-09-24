@@ -120,8 +120,6 @@ class ManageTracks(object):
     running_command = audio_converter + command_input + input_file + command_start + str(track_start) + command_end + str(track_end) + command_codec + " " + output_file
     cmd = shlex.split(running_command)
 
-    #print '    [+] Attempting to split track ' + val
-    #print '    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop)
     color_print('    [+] Attempting to split track ' + val, 'blue')
     color_print('    [+] Splitting from ' + str(track_start) + ' to ' + str(track_stop), 'green')
     try:
@@ -129,20 +127,20 @@ class ManageTracks(object):
       for line in process.stdout:
         if line[5:] == "size=":
           print(line)
-      #print '    [+] Track split'
+      
       color_print('    [+] Track split', 'white')
     except Exception, e:
-      #print '    [!] Unable to split track ' + val + ' "' + str(e) + '"'
+      
       color_print('    [!] Unable to split track ' + val + ' "' + str(e) + '"', 'red')
 
-    #print '    [+] Attempting to move to ./Converted folder'
+    
     color_print('    [+] Attempting to move to ./Converted folder', 'green')
 
 
     try:
       shutil.move('./' + val + '.mp3', './Converted/' + val + '.mp3')
     except Exception, e:
-      #print '    [!] Unable to move file. ' + str(e)
+      
       color_print('    [!] Unable to move file. ' + str(e), 'red')
 
   def sanitize_title(self, track_name, track_time):
@@ -160,7 +158,7 @@ class ManageTracks(object):
     # Strip off what was found (TODO: Fix regex so it doens't capture songs like 'Artist - Title (Something) More Title (Something else)')
     if string:
       file_name = track_name.replace(string[0], '')
-      file_name = file_name.replace('.mp3', '').strip() + '.mp3'
+      file_name = file_name.replace('.mp3', '').strip()
       color_print('    [+] Sanatized song title ' + track_name + ' to ' + file_name, 'green')
       return file_name
     else:
@@ -181,10 +179,10 @@ class ManageTracks(object):
         track_name = self.sanitize_title(track_name, track_time)
       except Exception, e:
         
-        color_print('    [!] Unable to parse strings. ' + str(e), 'red')
-
+        color_print('    [!] Unable to detect tracklist. ' + str(e), 'red')
+      
       track_title.append(track_name)
-
+     
       parts = track_time.split(':')
       seconds = None
       if len(parts) == 3: # h:m:s
@@ -192,8 +190,10 @@ class ManageTracks(object):
       elif len(parts) == 2: # m:s
         seconds = int(parts[0]) * 60 + int(parts[1])
       track_seconds.append(seconds)
-
+    
+    color_print('    [+] Track Detected. Attempting to split tracks', 'yellow')
     index = 0
+    
     for i, val in enumerate(track_title):
 
       if index == len(track_title) - 1:
@@ -270,7 +270,7 @@ def my_hook(d):
         restart_line()
         
     if d['status'] == 'finished':
-        #print '\n    [+] Download Complete. Conversion in progress...'
+        
         color_print('\n    [+] Download Complete. Conversion in progress...', 'yellow')
 
 def download_mp3(title, video_id):
@@ -279,11 +279,14 @@ def download_mp3(title, video_id):
   url = 'https://youtube.com/watch?v=' + video_id
   ydl_opts = {
     'format': 'bestaudio/best',
+    'writethumbnail': True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
         'preferredquality': '192',
-    }],
+    },
+    {'key': 'EmbedThumbnail'}
+    ],
     'logger': MyLogger(),
     'progress_hooks': [my_hook],
     'outtmpl': '%(title)s.%(ext)s',
@@ -326,8 +329,6 @@ def download_mp3(title, video_id):
   
   try:
     init_tracklist = track_class.get_tracklist()
-    
-    color_print('    [+] Tracklist Detected. Attempting to split tracks', 'yellow')
     track_class.split_tracks(init_tracklist)
 
   except Exception, e:
@@ -431,7 +432,7 @@ def youtube_search(options):
       youtube_search(options)
 
   elif yes_no == '3':
-    #print "[!] Exiting"
+    
     color_print('[!] Exiting', 'red')
     quit()
      
