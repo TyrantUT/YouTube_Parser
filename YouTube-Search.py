@@ -275,18 +275,13 @@ def my_hook(d):
 
 def download_mp3(title, video_id):
 
-  global track_time_name
   url = 'https://youtube.com/watch?v=' + video_id
   ydl_opts = {
-    'format': 'bestaudio/best',
-    'writethumbnail': True,
+    'format': 'bestaudio/best',    
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    },
-    {'key': 'EmbedThumbnail'}
-    ],
+        'preferredquality': '192'}],
     'logger': MyLogger(),
     'progress_hooks': [my_hook],
     'outtmpl': '%(title)s.%(ext)s',
@@ -334,7 +329,6 @@ def download_mp3(title, video_id):
   except Exception, e:
     
     color_print('    [!] Unable to detect tracklist' + str(e), 'red')
-
 
 def check_duplicates(title):
 
