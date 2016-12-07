@@ -38,17 +38,13 @@ YOUTUBE_API_VERSION = "v3"
 def color_print(p_string, color):
   print colored(p_string, color)
 
-def make_args(title):
-  parser = argparse.ArgumentParser()
+def youtube_start(title):
   search_string = title
+  parser = argparse.ArgumentParser(conflict_handler='resolve')
   parser.add_argument("--q", help="Search term", default=search_string)
   parser.add_argument("--max-results", help="Max results", default=1)
   args = parser.parse_args()
-  return args
 
-def youtube_start(title):
-  
-  args = make_args(title)
   try:
     # Start search function. This will branch off into the remainder of the script
     youtube_search(args, title)
@@ -81,29 +77,27 @@ def youtube_search(options, title):
 
         url =  'http://img.youtube.com/vi/%s/0.jpg' % (yt_video_id,)
         thumb_file = _thumb_dir_ + title + '.jpg'
-        if os.path.exists(thumb_file):
+
+        urllib.urlretrieve(url, thumb_file)
+
+        mp3_file = _converted_ + title + '.mp3'
+
+        mut_file = MP3(mp3_file, ID3=ID3)
+        try:
+          mut_file.add_tags()
+        except error:
           pass
-        else:
-          urllib.urlretrieve(url, thumb_file)
-
-          mp3_file = _converted_ + title + '.mp3'
-
-          mut_file = MP3(mp3_file, ID3=ID3)
-          try:
-            mut_file.add_tags()
-          except error:
-            pass
-          mut_file.tags.add(
-            APIC(
-              encoding=3,
-              mime='image/jpg',
-              type=3,
-              desc=u'Cover',
-              data=open(thumb_file).read()
-              )
+        mut_file.tags.add(
+          APIC(
+            encoding=3,
+            mime='image/jpg',
+            type=3,
+            desc=u'Cover',
+            data=open(thumb_file).read()
             )
-          color_print('Writing album art for ' + title, 'blue')
-          mut_file.save()
+          )
+        color_print('Writing album art for ' + title, 'blue')
+        mut_file.save()
     except Exception, e:
       print str(e)
 

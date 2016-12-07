@@ -1,9 +1,22 @@
 #!/usr/bin/python
 """
-YouTube_Parse_v3
+YouTube_Parse_v5
 Python script to search through YouTube videos based on search criteria, download each given video
 and convert to MP3, search through the video Description for a tracklist and split the initial 
 download into the proper track lists.
+
+Changes from v4
+Added function to add thumbmnails to MP3 file
+
+Changes from v3
+Added API key file creation if non exists
+igrated several functions into Classes
+
+TODO:
+1 - Perform internet search for song Artist / Title to verify what has been extracted is correct
+2 - Comment sections and make reference flow chart
+3 - Offer to create API key file if one doesn't exist
+
 """
 
 from apiclient.discovery import build
@@ -26,21 +39,36 @@ import collections
 import subprocess
 import shlex
 import time
+import argparse
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, APIC, error
 
+
+# Small function to print items in color
+def color_print(p_string, color):
+  print colored(p_string, color)
+
+# Define youtube API key file name
 _youtube_key_ = './youtube.key'
 
+# Check if the youtube key file exists, if not then prompt for the API key and create the file
 if not os.path.exists(_youtube_key_):
-  print '[!] Unable to find YouTube API Key File. Please re-create and try again.'
-  quit()
+  key_yesno = raw_input("Youtube Developer key not found, would you like to create one now? (Yes/No) ")
+  if key_yesno == 'Yes':
+    key_fromprompt = raw_input("Please enter your Youtube API Key ")
+    with open('./youtube.key', 'w') as l:
+      l.write(key_fromprompt)
+  else:
+    color_print('[!] Unable to find YouTube API Key File. Please re-create and try again.', 'red')
+    quit()
 
+# Open the PAI key file and read the first line into variable
 with open('./youtube.key', 'r') as k:
   DEVELOPER_KEY = k.readline()
 
+# Define service and version name for Youtube API
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
-
-def color_print(p_string, color):
-  print colored(p_string, color)
 
 # ManageTracks objects handle all track parsing, splitting, and renaming operations
 class ManageTracks(object):
@@ -53,6 +81,8 @@ class ManageTracks(object):
     # Variables to be used throughout class
     self.mt_fn = './Music/' + mt_vt + '.mp3' # YouTube Video Filename
 
+# YouTube API doesn't allow for a full download of the description field
+# Workaround to download as a JSON response
   def get_tracklist(self):
 
     video_url = 'https://www.googleapis.com/youtube/v3/videos?id=' + self.mt_id + '&key=' + DEVELOPER_KEY.strip('\n') + '&part=snippet'
@@ -63,17 +93,21 @@ class ManageTracks(object):
     try:
       for v in video_response['items']:
         video_meta.append(v['snippet']['description'])
-      for meta in video_meta:
+
+      for meta in video_meta: # Need to check this line, I don't think a for loop is required here since there is only one description
         description = self.parse_tracklist(meta)
       return description
     except:
       return False
 
   def parse_tracklist(self, meta):
-
+    # If the line includes a valid timestamp, then capture the oline into a list
     track_time_name = []
+
     for line in meta.splitlines():
-      if re.match('.*?\d{1,2}:\d{2}', line):
+      # Might be better 
+      # .*?\d{1,2}:\d{2}(:\d{2})?
+      if re.match('.*?\d{1,2}:\d{2}', line): # Need to modify to capture more valid timestamps
         track_time_name.append(line)
 
     return track_time_name
@@ -243,7 +277,6 @@ class GenerateID3(object):
           meta['artist'] = artist
           meta['title'] = title
           meta['genre'] = "Dubstep"
-          meta['album'] = "Dubstep"
           meta.save()
         else:
           pass
@@ -294,20 +327,20 @@ def download_mp3(title, video_id):
     color_print('    [+] Now downloading: ' + title + '.mp3', 'blue')
     try:
       ydl.download([url])
-
       color_print('    [+] Download and Conversion complete', 'green')
       color_print('    [+] Renaming file', 'blue')
+
     except:
       webm = max(glob.iglob('./*.[Ww][Ee][Bb][Mm]'), key=os.path.getctime)
+
       if os.path.isfile(webm):
-        try:
-          
+        try:     
           color_print('    [+] Attempting to convert directly.', 'blue')
           os.system('ffmpeg -i ' + '"' + webm + '"' + ' -vn -c:a libmp3lame -b:a 192k ' + '"' + title + '"' + '.mp3')
-        except:
-          
+
+        except:       
           color_print('    [+] Failed to download / convert MP3', 'red')
-        
+
         color_print('    [+] Failed to download / convert MP3', 'red')
 
   try:
@@ -315,8 +348,8 @@ def download_mp3(title, video_id):
     os.rename(newest, './Music/' + title + '.mp3')
     
     color_print('    [+] Renaming complete', 'green')
+
   except Exception, e:
-    
     color_print('[!] Unable to rename file', str(e), 'red')
   
   # Initiate track clalss
@@ -326,14 +359,11 @@ def download_mp3(title, video_id):
     init_tracklist = track_class.get_tracklist()
     track_class.split_tracks(init_tracklist)
 
-  except Exception, e:
-    
+  except Exception, e: 
     color_print('    [!] Unable to detect tracklist' + str(e), 'red')
 
 def check_duplicates(title):
-
   song = './Music/{0}.mp3'.format(title)
-
   if os.path.exists(song):
     return True
   else:
@@ -358,6 +388,7 @@ def youtube_search(options):
   ).execute()
 
   videos = {}
+
   # Add each result to the appropriate dictionary
   for search_result in search_response.get("items", []):
     if search_result["id"]["kind"] == "youtube#video":
@@ -371,7 +402,6 @@ def youtube_search(options):
   # Print titles found and prompt to continue
   os.system('clear')
 
-  
   color_print('\nThis is what I found\n', 'yellow')
   counter = 1
   for title, video_id in videos.items():
@@ -467,6 +497,7 @@ if __name__ == "__main__":
   _music_ = './Music'
   _converted_ = './Converted'
   _tracklist_ = './Tracklist'
+  _thumb_dir_ = './Thumbnails'
 
   if not os.path.isdir(_music_):
     os.makedirs(_music_)
@@ -474,6 +505,8 @@ if __name__ == "__main__":
     os.makedirs(_converted_)
   if not os.path.isdir(_tracklist_):
     os.makedirs(_tracklist_)
+  if not os.path.isdir(_thumb_dir_):
+    os.makedirs(_thumb_dir_)
 
   # Create arguments for YouTube search
   search_string = raw_input("Please enter a keyword to search: ")
