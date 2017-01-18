@@ -51,6 +51,27 @@ def youtube_start(title):
   except HttpError, e:
     print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
 
+def getMutagenTags(mp3_file):
+
+  fileName = mp3_file.strip('.mp3')
+  fileName = mp3_file.strip('./Converted/')
+  artist_title = fileName.split(' - ')
+  if len(artist_title) == 2:
+    songArtist = artist_title[0]
+    songTitle = artist_title[1]
+  else:
+    pass
+
+  try:
+    meta = EasyID3(mp3_file)
+  except mutagen.id3.ID3NoHeaderErrors:
+    meta = mutagen.File(mp3_file, easy=True)
+    meta.add_tags()
+
+  meta['artist'] = songArtist
+  meta['title'] = songTitle
+  meta['genre'] = "Dubstep"
+  meta.save()
 
 def youtube_search(options, title):
   youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
@@ -78,6 +99,9 @@ def youtube_search(options, title):
         url =  'http://img.youtube.com/vi/%s/0.jpg' % (yt_video_id,)
         thumb_file = _thumb_dir_ + title + '.jpg'
 
+        if os.path.exists(thumb_file):
+          pass
+
         urllib.urlretrieve(url, thumb_file)
 
         mp3_file = _converted_ + title + '.mp3'
@@ -98,6 +122,8 @@ def youtube_search(options, title):
           )
         color_print('Writing album art for ' + title, 'blue')
         mut_file.save()
+        getMutagenTags(mp3_file)
+
     except Exception, e:
       print str(e)
 
