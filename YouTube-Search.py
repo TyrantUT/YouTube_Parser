@@ -495,6 +495,7 @@ if __name__ == "__main__":
 
   # Check for directories prior to moving on
   _music_ = './Music'
+  _processing_ = './Processing'
   _converted_ = './Converted'
   _tracklist_ = './Tracklist'
   _thumb_dir_ = './Thumbnails'
@@ -506,6 +507,8 @@ if __name__ == "__main__":
   if not os.path.isdir(_tracklist_):
     os.makedirs(_tracklist_)
   if not os.path.isdir(_thumb_dir_):
+    os.makedirs(_thumb_dir_)
+  if not os.path.isdir(_processing_):
     os.makedirs(_thumb_dir_)
 
   # Create arguments for YouTube search
