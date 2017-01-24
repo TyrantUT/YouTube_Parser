@@ -122,7 +122,7 @@ def convertTo_mp3(video_title):
   try:
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
     for line in process.stdout:
-      if line[5:] == "size=":
+      if line[:5] == "size=":
         print line
     color_print('    [+] File converted', 'white')
   except Exception, e:
@@ -172,7 +172,7 @@ def write_id3():
         if len(artist_title) == 2:
           artist = artist_title[0]
           title = artist_title[1]
-          color_print('    [+] Starting id3 tag edit for ' + artist + ' - ' + title, 'blue')
+          color_print('    [+] Writing ID3 tag edit for ' + artist + ' - ' + title, 'yellow')
           
           try:
             meta = EasyID3(id3_mp3)
@@ -227,7 +227,7 @@ def finish_processing():
   for mp3_file in os.listdir(_processing_):
     if mp3_file.endswith('.mp3'):
       try:
-        os.rename(os.path.join(_processing, mp3_file), os.path.join(_converted_, mp3_file))
+        os.rename(os.path.join(_processing_, mp3_file), os.path.join(_converted_, mp3_file))
         color_print('    [!] Finished moving ' + mp3_file, 'yellow')
       except Exception as e:
         print str(e)
@@ -327,7 +327,7 @@ class trackList(object):
     try:
       process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
       for line in process.stdout:
-        if line[5:] == "size=":
+        if line[:5] == "size=":
           print(line)
       
       color_print('    [+] Track split', 'white')
