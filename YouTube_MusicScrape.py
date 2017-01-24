@@ -374,7 +374,7 @@ class trackList(object):
         self.split_song_to_tracks(val, track_seconds[index], track_seconds[index + 1])
         index += 1
 
-    os.move(self.file_Name, _music_ + '/')
+    os.rename(self.file_Name, os.path.join(_music_, self.video_title + '.mp3'))
 
     return track_title
 
