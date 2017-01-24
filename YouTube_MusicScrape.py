@@ -227,7 +227,7 @@ def finish_processing():
   for mp3_file in os.listdir(_processing_):
     if mp3_file.endswith('.mp3'):
       try:
-        os.move(os.path.join(_processing, mp3_file), os.path.join(_converted_, mp3_file))
+        os.rename(os.path.join(_processing, mp3_file), os.path.join(_converted_, mp3_file))
         color_print('    [!] Finished moving ' + mp3_file, 'yellow')
       except Exception as e:
         print str(e)
